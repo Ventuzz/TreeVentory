@@ -1,5 +1,6 @@
 package com.inventario.sucursales.dto;
 
+// # DTO para reporte de alertas de inventario bajo o crítico por sucursal
 public class InventoryAlertDto {
 
     private Long inventoryId;

@@ -21,6 +21,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// # Pruebas unitarias del servicio de autenticación y validación de credenciales
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 

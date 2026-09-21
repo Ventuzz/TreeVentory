@@ -15,6 +15,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// # Pruebas unitarias de operaciones de negocio sobre sucursales
 @ExtendWith(MockitoExtension.class)
 class BranchServiceTest {
 

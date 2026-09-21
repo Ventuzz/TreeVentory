@@ -23,6 +23,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// # Pruebas unitarias de existencias, cálculo de umbrales y alertas de stock
 @ExtendWith(MockitoExtension.class)
 class InventoryServiceTest {
 

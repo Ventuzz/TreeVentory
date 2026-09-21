@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
+// # Entidad JPA del catálogo de productos con precio, categoría y stock mínimo
 @Entity
 @Table(name = "products")
 public class Product {

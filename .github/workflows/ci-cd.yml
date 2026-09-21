@@ -7,12 +7,9 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  # =========================================================================
-  # ETAPA 1: PRUEBAS (TEST)
-  # Ejecuta pruebas unitarias e integración y genera reporte de cobertura JaCoCo
-  # =========================================================================
+  # Ejecución de pruebas unitarias e integración con generación de reporte JaCoCo
   test:
-    name: 1. Pruebas Unitarias y Cobertura JaCoCo
+    name: Pruebas Unitarias y Cobertura JaCoCo
     runs-on: ubuntu-latest
 
     services:
@@ -55,12 +52,9 @@ jobs:
           path: target/site/jacoco/
           retention-days: 7
 
-  # =========================================================================
-  # ETAPA 2: CONSTRUCCIÓN (BUILD)
-  # Compila y empaqueta el artefacto ejecutable (.jar) y construye imagen Docker
-  # =========================================================================
+  # Compilación del artefacto ejecutable (.jar) y construcción de imagen Docker
   build:
-    name: 2. Construcción y Empaquetado de Artefactos
+    name: Construcción y Empaquetado de Artefactos
     needs: test
     runs-on: ubuntu-latest
 
@@ -99,12 +93,9 @@ jobs:
           push: false
           tags: inventario-sucursales:latest
 
-  # =========================================================================
-  # ETAPA 3: DESPLIEGUE / DELIVERY (DEPLOY)
-  # Despliega automáticamente en el entorno de pruebas local/contenedor
-  # =========================================================================
+  # Despliegue automatizado en entorno de pruebas de contenedores
   deploy:
-    name: 3. Despliegue Automatizado en Entorno de Pruebas
+    name: Despliegue Automatizado en Entorno de Pruebas
     needs: build
     runs-on: ubuntu-latest
 

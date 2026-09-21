@@ -2,6 +2,7 @@ package com.inventario.sucursales.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+// # DTO con credenciales de acceso para inicio de sesión en el sistema
 public class LoginRequest {
 
     @NotBlank(message = "El nombre de usuario es obligatorio")

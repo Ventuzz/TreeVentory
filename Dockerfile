@@ -1,4 +1,4 @@
-# Etapa 1: Construcción del artefacto
+# Compilación y empaquetado del artefacto con Maven
 FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN ./mvnw dependency:go-offline -B || true
 COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
-# Etapa 2: Imagen de ejecución ligera
+# Imagen de ejecución ligera basada en JRE
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 

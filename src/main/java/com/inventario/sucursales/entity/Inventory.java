@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
+// # Entidad JPA que mapea las existencias actuales de un producto en una sucursal
 @Entity
 @Table(name = "inventories", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"branch_id", "product_id"})

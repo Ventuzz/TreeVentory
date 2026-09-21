@@ -44,9 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-// -------------------------------------------------------------
-// 1. AUTENTICACIÓN Y SESIÓN
-// -------------------------------------------------------------
+// # Gestión de autenticación, control de sesión y persistencia del token JWT
 function initAuth() {
     currentToken = localStorage.getItem('treeventory_token');
     const userJson = localStorage.getItem('treeventory_user');
@@ -175,9 +173,7 @@ async function authFetch(url, options = {}) {
     return response;
 }
 
-// -------------------------------------------------------------
-// 2. CARGA CENTRALIZADA DE DATOS
-// -------------------------------------------------------------
+// # Carga centralizada de catálogos y datos vía REST API
 async function loadAllData() {
     try {
         const [branchesRes, productsRes, invRes, requestsRes, alertsRes] = await Promise.all([
@@ -298,9 +294,7 @@ function populateModalDropdowns() {
     if (otherBranchCatFilter) otherBranchCatFilter.innerHTML = catOptions;
 }
 
-// -------------------------------------------------------------
-// 3. CAMBIO DE VISTAS (SPA)
-// -------------------------------------------------------------
+// # Enrutamiento dinámico entre vistas del panel (SPA)
 function switchView(viewName) {
     currentActiveView = viewName;
     document.querySelectorAll('.view-panel').forEach(p => p.classList.add('d-none'));
@@ -359,9 +353,7 @@ function switchView(viewName) {
     }
 }
 
-// -------------------------------------------------------------
-// 4. RENDER: DASHBOARD (ADMIN & GERENTE)
-// -------------------------------------------------------------
+// # Métricas, gráficos y componentes del Dashboard principal
 function renderDashboard() {
     const isAdmin = currentUser.role === 'ROLE_ADMIN';
 
@@ -655,9 +647,7 @@ function renderRecentRequestsBottomTable() {
     });
 }
 
-// -------------------------------------------------------------
-// 5. RENDER: INVENTARIO MATRICIAL (ADMINISTRADOR)
-// -------------------------------------------------------------
+// # Matriz global de inventario por sucursales para el Administrador
 function renderAdminMatrix() {
     const thead = document.getElementById('matrixTableHead');
     const tbody = document.getElementById('matrixTableBody');
@@ -758,9 +748,7 @@ function quickEditStockAdmin(branchId, productId, currentQty, prodName, branchNa
     openEditStockModal(branchId, productId, currentQty, prodName, branchName);
 }
 
-// -------------------------------------------------------------
-// 6. RENDER: MI INVENTARIO (GERENTE - CON BOTÓN DE SOLICITUD DIRECTO)
-// -------------------------------------------------------------
+// # Gestión del inventario local de la sucursal activa y alertas
 function filterManagerStock(filter) {
     activeManagerStockFilter = filter;
     document.querySelectorAll('.chips-group .filter-chip').forEach(c => c.classList.remove('active'));
@@ -919,9 +907,7 @@ function renderManagerInventoryTable() {
     });
 }
 
-// -------------------------------------------------------------
-// 7. RENDER: OTRAS SUCURSALES (GERENTE - CONSULTA SOLO LECTURA)
-// -------------------------------------------------------------
+// # Consulta de inventarios en otras sucursales para traspasos
 function renderOtherBranchesView() {
     const grid = document.getElementById('branchesMiniGrid');
     grid.innerHTML = '';
@@ -1039,9 +1025,7 @@ function onOtherBranchChange() {
     });
 }
 
-// -------------------------------------------------------------
-// 8. RENDER: SOLICITUDES (ADMIN & GERENTE)
-// -------------------------------------------------------------
+// # Visualización y resolución de solicitudes de inventario
 function filterRequestsByStatus(status) {
     activeRequestStatusFilter = status;
     document.querySelectorAll('#requestStatusTabs .filter-chip').forEach(c => c.classList.remove('active'));
@@ -1162,9 +1146,7 @@ async function rejectRequest(id) {
     }
 }
 
-// -------------------------------------------------------------
-// 9. RENDER: EMPLEADOS (EXCLUSIVO ADMINISTRADOR)
-// -------------------------------------------------------------
+// # Administración de usuarios y personal por sucursal
 function renderEmployeesView() {
     const grid = document.getElementById('empBranchMiniCards');
     grid.innerHTML = '';
@@ -1274,9 +1256,7 @@ async function deleteEmployee(id) {
     }
 }
 
-// -------------------------------------------------------------
-// 10. MODAL: NUEVA SOLICITUD & ACCIONES RÁPIDAS
-// -------------------------------------------------------------
+// # Diálogos modales para creación de solicitudes y productos
 function selectRequestType(type) {
     document.getElementById('modalReqType').value = type;
     const cardSup = document.getElementById('toggleCardSupplier');
@@ -1332,9 +1312,7 @@ function openNewProductModal() {
     new bootstrap.Modal(document.getElementById('modalNuevoProducto')).show();
 }
 
-// -------------------------------------------------------------
-// 11. EVENT LISTENERS
-// -------------------------------------------------------------
+// # Inicialización de escuchadores de eventos y formularios
 function setupEventListeners() {
     // Login Form
     const loginForm = document.getElementById('loginForm');

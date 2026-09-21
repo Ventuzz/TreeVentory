@@ -1,5 +1,6 @@
 package com.inventario.sucursales.dto;
 
+// # DTO con observaciones del Administrador para aprobación o rechazo de solicitudes
 public class ReviewRequestDto {
 
     private String adminComments;

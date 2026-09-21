@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// # Servicio para procesamiento de solicitudes de traspaso inter-sucursal y pedidos a proveedor
 @Service
 public class RequestService {
 
@@ -42,7 +43,7 @@ public class RequestService {
         if (user.getRole() == Role.ROLE_ADMIN) {
             return requestRepository.findAllByOrderByCreatedAtDesc();
         } else {
-            // Gerente solo ve las solicitudes donde su sucursal está involucrada
+            // # Los gerentes solo consultan las solicitudes vinculadas a su sucursal
             if (user.getBranch() == null) {
                 return List.of();
             }
@@ -78,7 +79,7 @@ public class RequestService {
             originBranch = branchRepository.findById(dto.getOriginBranchId())
                     .orElseThrow(() -> new IllegalArgumentException("Sucursal de origen no valida: " + dto.getOriginBranchId()));
 
-            // Validar que la sucursal de origen cuente con stock suficiente para el traslado
+            // # Validación de stock suficiente en la sucursal de origen
             Inventory originStock = inventoryService.getInventoryByBranchAndProduct(originBranch.getId(), product.getId());
             if (originStock == null || originStock.getQuantity() < dto.getQuantity()) {
                 int disponible = originStock != null ? originStock.getQuantity() : 0;
@@ -87,14 +88,14 @@ public class RequestService {
             }
         }
 
-        // Si es Gerente, la sucursal destino debe ser su sucursal asignada
+        // # Si es Gerente, la sucursal destino debe ser su sucursal asignada
         if (user.getRole() == Role.ROLE_GERENTE) {
             if (user.getBranch() == null || !user.getBranch().getId().equals(destinationBranch.getId())) {
                 throw new IllegalArgumentException("Como Gerente solo puede solicitar mercancia para su propia sucursal");
             }
         }
 
-        // Validar que no exista ya una solicitud PENDIENTE para este producto en la sucursal de destino
+        // # Validación para evitar solicitudes pendientes duplicadas del mismo producto
         boolean alreadyPending = requestRepository.existsByDestinationBranchIdAndProductIdAndStatus(
                 destinationBranch.getId(), product.getId(), RequestStatus.PENDING);
         if (alreadyPending) {
@@ -128,11 +129,11 @@ public class RequestService {
                 .orElseThrow(() -> new IllegalArgumentException("Usuario revisor no encontrado: " + adminUsername));
 
         if (request.getRequestType() == RequestType.TRANSFER) {
-            // Deducir inventario en sucursal de origen y sumar en destino
+            // # Ajuste atómico de inventario por traspaso (origen (-) y destino (+))
             inventoryService.adjustStock(request.getOriginBranch().getId(), request.getProduct().getId(), -request.getQuantity());
             inventoryService.adjustStock(request.getDestinationBranch().getId(), request.getProduct().getId(), request.getQuantity());
         } else if (request.getRequestType() == RequestType.SUPPLIER) {
-            // Sumar inventario en sucursal de destino proveniente de proveedor
+            // # Ajuste de inventario por recepción de proveedor (destino (+))
             inventoryService.adjustStock(request.getDestinationBranch().getId(), request.getProduct().getId(), request.getQuantity());
         }
 

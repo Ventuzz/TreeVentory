@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+// # Repositorio JPA para consultas y validaciones de solicitudes de inventario
 @Repository
 public interface InventoryRequestRepository extends JpaRepository<InventoryRequest, Long> {
 

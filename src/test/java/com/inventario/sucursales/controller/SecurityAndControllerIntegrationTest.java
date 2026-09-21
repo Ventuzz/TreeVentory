@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+// # Pruebas de integración de seguridad y control de acceso RBAC por endpoints
 @SpringBootTest
 @AutoConfigureMockMvc
 class SecurityAndControllerIntegrationTest {
@@ -60,7 +61,7 @@ class SecurityAndControllerIntegrationTest {
         sampleBranch = new Branch(1L, "SUC-01", "CDMX Norte", "CDMX", "CDMX", "Dir", "555", true);
     }
 
-    // 1. Validar que un usuario SIN TOKEN no pueda acceder a endpoints protegidos (401 Unauthorized)
+    // # Validación de rechazo a peticiones no autenticadas (401 Unauthorized)
     @Test
     void testUnauthenticatedAccessReturns401() throws Exception {
         mockMvc.perform(get("/api/inventory/all"))
@@ -75,7 +76,7 @@ class SecurityAndControllerIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // 2. Operación restringida EXCLUSIVAMENTE a ADMIN: Gerente intentando acceder recibe 403 Forbidden
+    // # Validación de control de acceso por roles RBAC ante recursos protegidos (403 Forbidden)
     @Test
     @WithMockUser(username = "gerente_cdmx", roles = {"GERENTE"})
     void testGerenteAccessToAdminOnlyEmployeesReturns403() throws Exception {
@@ -101,7 +102,7 @@ class SecurityAndControllerIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // 3. Operación disponible para usuarios autenticados (ADMIN y GERENTE): Ambos pueden consultar sucursales y productos
+    // # Validación de acceso autorizado a catálogos compartidos para roles autorizados (200 OK)
     @Test
     @WithMockUser(username = "gerente_cdmx", roles = {"GERENTE"})
     void testGerenteCanAccessBranchesReturns200() throws Exception {
@@ -123,7 +124,7 @@ class SecurityAndControllerIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
-    // 4. Operación exclusiva de ADMIN ejecutada con rol ADMIN -> 200 OK
+    // # Validación de ejecución exitosa con privilegios de administrador (200 OK)
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void testAdminAccessToEmployeesReturns200() throws Exception {
@@ -136,7 +137,7 @@ class SecurityAndControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].username").value("emp1"));
     }
 
-    // 5. Endpoint público de autenticación login
+    // # Validación de endpoint público para autenticación y emisión de tokens (200 OK)
     @Test
     void testPublicLoginEndpointReturns200() throws Exception {
         LoginRequest req = new LoginRequest("admin", "admin123");

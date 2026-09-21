@@ -4,6 +4,7 @@ import com.inventario.sucursales.entity.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+// # DTO para registro, edición y asignación de empleados por el Administrador
 public class EmployeeDto {
 
     private Long id;

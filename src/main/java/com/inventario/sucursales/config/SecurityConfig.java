@@ -23,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+// # Configuración de seguridad Spring Security, filtros JWT, CORS y políticas de acceso RBAC
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -47,12 +48,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Desactivar CSRF para API REST sin estado
+            // # Desactivar CSRF para API REST sin estado
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // Gestion de sesion sin estado
+            // # Gestión de sesión sin estado
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // Manejo de excepciones de autenticacion y autorizacion (401 y 403 con JSON)
+            // # Manejo de excepciones de autenticación y autorización (401 y 403 con JSON)
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setContentType("application/json;charset=UTF-8");
@@ -65,16 +66,16 @@ public class SecurityConfig {
                     response.getWriter().write("{\"success\":false,\"message\":\"Acceso denegado: No posee los permisos requeridos para esta operacion.\"}");
                 })
             )
-            // Cabeceras HTTP de seguridad (OWASP ZAP best practices)
+            // # Cabeceras HTTP de seguridad (OWASP ZAP best practices)
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                 .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable) // spring will add X-Content-Type-Options: nosniff
                 .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: https:; connect-src 'self'"))
                 .referrerPolicy(referrer -> referrer.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
             )
-            // Reglas de autorizacion por endpoints y roles
+            // # Reglas de autorización por endpoints y roles
             .authorizeHttpRequests(auth -> auth
-                // Endpoints publicos (Login, Frontend estatico, Health check)
+                // # Endpoints públicos (Login, Frontend estático, Health check)
                 .requestMatchers(
                     "/api/auth/**",
                     "/",
@@ -86,7 +87,7 @@ public class SecurityConfig {
                     "/actuator/health"
                 ).permitAll()
 
-                // Operaciones EXCLUSIVAS del Administrador (ROLE_ADMIN)
+                // # Operaciones exclusivas del Administrador (ROLE_ADMIN)
                 .requestMatchers("/api/employees/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/requests/*/approve").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/requests/*/reject").hasRole("ADMIN")
@@ -95,7 +96,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/branches/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
 
-                // Operaciones accesibles por usuarios autenticados (ADMIN y GERENTE)
+                // # Operaciones accesibles por usuarios autenticados (ADMIN y GERENTE)
                 .requestMatchers(HttpMethod.GET, "/api/branches/**").hasAnyRole("ADMIN", "GERENTE")
                 .requestMatchers(HttpMethod.GET, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
                 .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
@@ -104,7 +105,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/requests/**").hasAnyRole("ADMIN", "GERENTE")
                 .requestMatchers(HttpMethod.POST, "/api/requests/**").hasAnyRole("ADMIN", "GERENTE")
 
-                // Cualquier otra peticion requiere autenticacion
+                // # Cualquier otra petición requiere autenticación
                 .anyRequest().authenticated()
             );
 

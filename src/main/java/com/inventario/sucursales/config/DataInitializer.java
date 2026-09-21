@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// # Inicializador de datos maestros (sucursales, catalogo, usuarios e inventario inicial)
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -48,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
 
         logger.info("Iniciando precarga de datos: 16 sucursales, productos, usuarios y stock inicial...");
 
-        // 1. Inicializar las 16 Sucursales
+        // # Inicialización del catálogo de sucursales en territorio nacional
         List<Branch> branches = new ArrayList<>();
         branches.add(new Branch(null, "SUC-01", "CDMX Centro", "Ciudad de México", "CDMX", "Av. Juárez 123, Centro Histórico", "55-1001-0001", true));
         branches.add(new Branch(null, "SUC-02", "CDMX Norte", "Ciudad de México", "CDMX", "Av. Insurgentes Norte 450, Gustavo A. Madero", "55-1001-0002", true));
@@ -70,7 +71,7 @@ public class DataInitializer implements CommandLineRunner {
         List<Branch> savedBranches = branchRepository.saveAll(branches);
         logger.info("16 sucursales registradas exitosamente.");
 
-        // 2. Inicializar Productos con categorías y umbrales mínimos
+        // # Precarga del catálogo de productos base con stock mínimo
         List<Product> products = new ArrayList<>();
         products.add(new Product(null, "ELC-001", "Laptop Dell Inspiron 15", "Laptop empresarial 16GB RAM SSD 512GB", "Electrónicos", new BigDecimal("12500.00"), "pza", 5, true));
         products.add(new Product(null, "ELC-002", "Monitor Samsung 24\"", "Panel FHD antirreflejo HDMI", "Electrónicos", new BigDecimal("4800.00"), "pza", 5, true));
@@ -92,7 +93,7 @@ public class DataInitializer implements CommandLineRunner {
         List<Product> savedProducts = productRepository.saveAll(products);
         logger.info("Catálogo de productos inicializado.");
 
-        // 3. Inicializar Usuarios y Roles
+        // # Configuración de cuentas iniciales para administradores y gerentes
         List<User> users = new ArrayList<>();
         // Administrador Corporativo (Roberto Vargas)
         users.add(new User(null, "admin", passwordEncoder.encode("admin123"), "Roberto Vargas", "r.vargas@corp.mx", Role.ROLE_ADMIN, null, "Director de Operaciones", "55-1111-2222", true));
@@ -116,7 +117,7 @@ public class DataInitializer implements CommandLineRunner {
         userRepository.saveAll(users);
         logger.info("Usuarios iniciales creados (admin, gerentes y trabajadores).");
 
-        // 4. Inicializar Inventario en las 16 Sucursales
+        // # Asignación de stock inicial distribuido entre sucursales
         // Configuramos stock variado, incluyendo stock bajo (< minStockThreshold) en algunas sucursales para alertas visuales inmediatas
         List<Inventory> inventories = new ArrayList<>();
         for (int i = 0; i < savedBranches.size(); i++) {

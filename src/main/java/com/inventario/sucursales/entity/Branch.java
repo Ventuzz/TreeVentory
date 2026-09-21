@@ -3,6 +3,7 @@ package com.inventario.sucursales.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
+// # Entidad JPA que representa una sucursal física en el territorio nacional
 @Entity
 @Table(name = "branches")
 public class Branch {

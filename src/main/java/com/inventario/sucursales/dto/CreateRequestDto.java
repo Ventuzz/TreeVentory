@@ -4,6 +4,7 @@ import com.inventario.sucursales.entity.RequestType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+// # DTO con datos de entrada para creación de solicitudes de traspaso o surtido
 public class CreateRequestDto {
 
     @NotNull(message = "El tipo de solicitud es obligatorio (TRANSFER o SUPPLIER)")

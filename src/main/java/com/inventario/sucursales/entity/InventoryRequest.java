@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
+// # Entidad JPA para registro y trazabilidad de solicitudes de traspaso y surtido
 @Entity
 @Table(name = "inventory_requests")
 public class InventoryRequest {

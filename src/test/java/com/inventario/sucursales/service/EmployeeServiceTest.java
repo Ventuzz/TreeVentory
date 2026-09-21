@@ -20,6 +20,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// # Pruebas unitarias para gestión de empleados, altas, bajas y cambios de sucursal
 @ExtendWith(MockitoExtension.class)
 class EmployeeServiceTest {
 

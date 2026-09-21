@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+// # Entidad JPA que representa a usuarios, administradores y empleados con credenciales
 @Entity
 @Table(name = "users")
 public class User {

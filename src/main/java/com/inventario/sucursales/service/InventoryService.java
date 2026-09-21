@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import com.inventario.sucursales.repository.InventoryRequestRepository;
 import com.inventario.sucursales.entity.RequestStatus;
 
+// # Servicio para control de existencias, cálculo de alertas de stock bajo y ajustes de inventario
 @Service
 public class InventoryService {
 

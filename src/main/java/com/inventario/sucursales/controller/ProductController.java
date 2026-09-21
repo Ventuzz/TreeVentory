@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// # Controlador REST para catálogo de productos y mantenimiento de inventario
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {

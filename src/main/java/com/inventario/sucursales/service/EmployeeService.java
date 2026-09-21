@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+// # Servicio de gestión de personal, asignación a sucursales y cifrado de contraseñas
 @Service
 public class EmployeeService {
 

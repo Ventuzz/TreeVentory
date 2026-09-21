@@ -17,6 +17,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// # Pruebas unitarias del manejador global de excepciones REST
 class GlobalExceptionHandlerTest {
 
     private GlobalExceptionHandler exceptionHandler;

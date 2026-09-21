@@ -16,6 +16,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// # Pruebas unitarias de administración del catálogo de productos y SKU
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
 

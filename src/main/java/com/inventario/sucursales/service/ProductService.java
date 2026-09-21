@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+// # Servicio para administración del catálogo de productos y umbrales mínimos de stock
 @Service
 public class ProductService {
 

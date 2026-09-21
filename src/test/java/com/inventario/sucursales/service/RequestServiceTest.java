@@ -22,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// # Pruebas unitarias de ciclo de vida de solicitudes de traspaso y surtido
 @ExtendWith(MockitoExtension.class)
 class RequestServiceTest {
 

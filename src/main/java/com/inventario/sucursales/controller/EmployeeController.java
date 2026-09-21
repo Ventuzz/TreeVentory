@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// # Controlador REST para la gestión y aprovisionamiento de empleados por el Administrador
 @RestController
 @RequestMapping("/api/employees")
 @PreAuthorize("hasRole('ADMIN')")

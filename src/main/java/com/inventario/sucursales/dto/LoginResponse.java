@@ -1,5 +1,6 @@
 package com.inventario.sucursales.dto;
 
+// # DTO de respuesta de autenticación con token JWT y datos del usuario
 public class LoginResponse {
 
     private String token;
