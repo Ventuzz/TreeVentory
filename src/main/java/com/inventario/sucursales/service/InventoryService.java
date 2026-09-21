@@ -35,12 +35,6 @@ public class InventoryService {
         this.requestRepository = requestRepository;
     }
 
-    public InventoryService(InventoryRepository inventoryRepository,
-                          BranchRepository branchRepository,
-                          ProductRepository productRepository) {
-        this(inventoryRepository, branchRepository, productRepository, null);
-    }
-
     @Transactional(readOnly = true)
     public List<Inventory> getInventoryByBranch(Long branchId) {
         return inventoryRepository.findByBranchId(branchId);
