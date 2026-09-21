@@ -347,7 +347,7 @@ function switchView(viewName) {
             if (!isAdmin) return;
             document.getElementById('viewEmpleados').classList.remove('d-none');
             document.getElementById('navBtnEmpleados').classList.add('active');
-            titleEl.textContent = 'Empleados';
+            titleEl.textContent = 'Empleados contratados';
             renderEmployeesView();
             break;
     }
@@ -1066,7 +1066,7 @@ function renderRequestsView() {
     let list = cachedRequests;
     if (isGerente && currentUser.branchId) {
         list = list.filter(r => (r.destinationBranch && r.destinationBranch.id === currentUser.branchId) ||
-                                (r.originBranch && r.originBranch.id === currentUser.branchId));
+            (r.originBranch && r.originBranch.id === currentUser.branchId));
     }
 
     if (activeRequestStatusFilter !== 'all') {
