@@ -1,26 +1,37 @@
-// Estado de la aplicación
+// Treeventory - Client Application Logic
 const API_BASE = '/api';
 let currentUser = null;
 let currentToken = null;
+
+// Caché en memoria de catálogos y datos
 let cachedBranches = [];
 let cachedProducts = [];
+let cachedInventories = [];
+let cachedRequests = [];
+let cachedEmployees = [];
+let cachedAlerts = [];
 
-// Inicialización al cargar la página
+// Filtros activos
+let activeManagerStockFilter = 'all';
+let activeRequestStatusFilter = 'all';
+let activeRequestTypeFilter = 'all';
+let currentActiveView = 'dashboard';
+
 document.addEventListener('DOMContentLoaded', () => {
     initAuth();
     setupEventListeners();
 });
 
 // -------------------------------------------------------------
-// GESTIÓN DE AUTENTICACIÓN Y JWT
+// 1. AUTENTICACIÓN Y SESIÓN
 // -------------------------------------------------------------
 function initAuth() {
-    currentToken = localStorage.getItem('jwt_token');
-    const userJson = localStorage.getItem('user_info');
+    currentToken = localStorage.getItem('treeventory_token');
+    const userJson = localStorage.getItem('treeventory_user');
     if (currentToken && userJson) {
         try {
             currentUser = JSON.parse(userJson);
-            showDashboard();
+            renderAuthenticatedWorkspace();
             return;
         } catch (e) {
             logout();
@@ -32,33 +43,49 @@ function initAuth() {
 function showLogin() {
     document.getElementById('loginSection').classList.remove('d-none');
     document.getElementById('dashboardSection').classList.add('d-none');
-    document.getElementById('navUserInfo').classList.add('d-none');
 }
 
-function showDashboard() {
+function renderAuthenticatedWorkspace() {
     document.getElementById('loginSection').classList.add('d-none');
     document.getElementById('dashboardSection').classList.remove('d-none');
-    document.getElementById('navUserInfo').classList.remove('d-none');
 
-    // Mostrar datos del usuario en la barra
-    document.getElementById('navUserName').textContent = currentUser.fullName;
-    document.getElementById('navUserRole').textContent = currentUser.role === 'ROLE_ADMIN' ? 'ADMINISTRADOR' : 'GERENTE';
-    document.getElementById('navUserBranch').textContent = currentUser.branchName || 'Acceso Global';
-
-    // Ajustar visibilidad según el rol
     const isAdmin = currentUser.role === 'ROLE_ADMIN';
+
+    // Configurar encabezado y etiquetas del Sidebar
+    const roleLabel = document.getElementById('sidebarRoleLabel');
+    const branchBadge = document.getElementById('sidebarBranchBadge');
+    const avatar = document.getElementById('userAvatarInitials');
+    const nameEl = document.getElementById('userProfileName');
+    const emailEl = document.getElementById('userProfileEmail');
+
+    roleLabel.textContent = isAdmin ? 'ADMINISTRADOR' : 'GERENTE DE SUCURSAL';
+    if (!isAdmin && currentUser.branchName) {
+        branchBadge.textContent = currentUser.branchName;
+        branchBadge.classList.remove('d-none');
+    } else {
+        branchBadge.classList.add('d-none');
+    }
+
+    // Avatar con iniciales
+    const initials = currentUser.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+    avatar.textContent = initials || (isAdmin ? 'RV' : 'LM');
+    nameEl.textContent = currentUser.fullName;
+    emailEl.textContent = currentUser.username.includes('@') ? currentUser.username : `${currentUser.username}@corp.mx`;
+
+    // Visibilidad de menú según el rol
     document.querySelectorAll('.admin-only').forEach(el => {
-        el.style.display = isAdmin ? '' : 'none';
+        if (isAdmin) el.classList.remove('d-none');
+        else el.classList.add('d-none');
     });
 
-    // Cargar catálogos y datos iniciales
-    loadBranches().then(() => {
-        // Si es gerente, preseleccionar su sucursal fija
-        if (!isAdmin && currentUser.branchId) {
-            const branchSelect = document.getElementById('inventoryBranchSelect');
-            if (branchSelect) branchSelect.value = currentUser.branchId;
-        }
-        refreshDashboardData();
+    document.querySelectorAll('.gerente-only').forEach(el => {
+        if (!isAdmin) el.classList.remove('d-none');
+        else el.classList.add('d-none');
+    });
+
+    // Cargar datos y mostrar vista inicial
+    loadAllData().then(() => {
+        switchView('dashboard');
     });
 }
 
@@ -72,7 +99,7 @@ async function login(username, password) {
 
         const data = await response.json();
         if (!response.ok || !data.success) {
-            showNotification(data.message || 'Error al iniciar sesión', 'danger');
+            alert(data.message || 'Credenciales incorrectas');
             return;
         }
 
@@ -86,27 +113,24 @@ async function login(username, password) {
             branchName: loginData.branchName
         };
 
-        localStorage.setItem('jwt_token', currentToken);
-        localStorage.setItem('user_info', JSON.stringify(currentUser));
+        localStorage.setItem('treeventory_token', currentToken);
+        localStorage.setItem('treeventory_user', JSON.stringify(currentUser));
 
-        showNotification('Bienvenido, ' + currentUser.fullName, 'success');
-        showDashboard();
+        renderAuthenticatedWorkspace();
     } catch (err) {
-        showNotification('Error de conexión con el servidor', 'danger');
+        alert('Error al conectar con el servidor.');
         console.error(err);
     }
 }
 
 function logout() {
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_info');
+    localStorage.removeItem('treeventory_token');
+    localStorage.removeItem('treeventory_user');
     currentToken = null;
     currentUser = null;
     showLogin();
-    showNotification('Sesión finalizada', 'info');
 }
 
-// Helper para peticiones HTTP autenticadas con JWT
 async function authFetch(url, options = {}) {
     options.headers = options.headers || {};
     if (currentToken) {
@@ -117,534 +141,1049 @@ async function authFetch(url, options = {}) {
     }
 
     const response = await fetch(url, options);
-
     if (response.status === 401) {
-        showNotification('Su sesión ha expirado o el token es inválido. Inicie sesión nuevamente.', 'warning');
         logout();
         throw new Error('Unauthorized');
     }
-
     if (response.status === 403) {
-        showNotification('Acceso denegado: No cuenta con el rol requerido para esta acción.', 'danger');
+        alert('Acceso denegado: No posee los permisos requeridos.');
         throw new Error('Forbidden');
     }
-
     return response;
 }
 
 // -------------------------------------------------------------
-// CARGA DE DATOS Y COMPONENTES
+// 2. CARGA CENTRALIZADA DE DATOS
 // -------------------------------------------------------------
-async function loadBranches() {
+async function loadAllData() {
     try {
-        const res = await authFetch(`${API_BASE}/branches`);
-        const json = await res.json();
-        if (json.success) {
-            cachedBranches = json.data;
-            populateBranchSelectors();
+        const [branchesRes, productsRes, invRes, requestsRes, alertsRes] = await Promise.all([
+            authFetch(`${API_BASE}/branches`).then(r => r.json()),
+            authFetch(`${API_BASE}/products`).then(r => r.json()),
+            authFetch(`${API_BASE}/inventory/all`).then(r => r.json()),
+            authFetch(`${API_BASE}/requests`).then(r => r.json()),
+            authFetch(`${API_BASE}/inventory/alerts`).then(r => r.json())
+        ]);
+
+        if (branchesRes.success) cachedBranches = branchesRes.data;
+        if (productsRes.success) cachedProducts = productsRes.data;
+        if (invRes.success) cachedInventories = invRes.data;
+        if (requestsRes.success) cachedRequests = requestsRes.data;
+        if (alertsRes.success) cachedAlerts = alertsRes.data;
+
+        if (currentUser.role === 'ROLE_ADMIN') {
+            const empRes = await authFetch(`${API_BASE}/employees`).then(r => r.json());
+            if (empRes.success) cachedEmployees = empRes.data;
         }
+
+        updateTopAlertPill();
+        populateModalDropdowns();
     } catch (e) {
-        console.error('Error cargando sucursales', e);
+        console.error('Error cargando datos de Treeventory', e);
     }
 }
 
-function populateBranchSelectors() {
-    const invSelect = document.getElementById('inventoryBranchSelect');
-    const reqDestSelect = document.getElementById('reqDestinationBranch');
-    const reqOrigSelect = document.getElementById('reqOriginBranch');
-    const empBranchSelect = document.getElementById('empBranch');
-    const empFilterSelect = document.getElementById('empFilterBranch');
+function updateTopAlertPill() {
+    const isGerente = currentUser.role === 'ROLE_GERENTE';
+    const relevantAlerts = isGerente && currentUser.branchId ?
+        cachedAlerts.filter(a => a.branchId === currentUser.branchId) : cachedAlerts;
 
-    const optionsHtml = cachedBranches.map(b => `<option value="${b.id}">${b.code} - ${b.name} (${b.city})</option>`).join('');
+    const alertText = `${relevantAlerts.length} alertas de stock bajo`;
+    const pill = document.getElementById('topbarAlertText');
+    if (pill) pill.textContent = alertText;
 
-    if (invSelect) invSelect.innerHTML = `<option value="">Todas las sucursales (Global)</option>` + optionsHtml;
-    if (reqDestSelect) reqDestSelect.innerHTML = `<option value="">Seleccione sucursal destino...</option>` + optionsHtml;
-    if (reqOrigSelect) reqOrigSelect.innerHTML = `<option value="">Seleccione sucursal de origen...</option>` + optionsHtml;
-    if (empBranchSelect) empBranchSelect.innerHTML = `<option value="">Sin sucursal asignada (Corporativo)</option>` + optionsHtml;
-    if (empFilterSelect) empFilterSelect.innerHTML = `<option value="">Todas las sucursales</option>` + optionsHtml;
+    const navBadge = document.getElementById('navAlertBadge');
+    if (navBadge) navBadge.textContent = relevantAlerts.length;
 }
 
-async function refreshDashboardData() {
-    loadProducts();
-    loadInventory();
-    loadLowStockAlerts();
-    loadRequests();
-    if (currentUser && currentUser.role === 'ROLE_ADMIN') {
-        loadEmployees();
+function populateModalDropdowns() {
+    // Sucursales
+    const reqDestSelect = document.getElementById('modalReqDestBranch');
+    const reqOrigSelect = document.getElementById('modalReqOriginBranch');
+    const empBranchSelect = document.getElementById('modalEmpBranch');
+    const otherBranchSelect = document.getElementById('otherBranchSelect');
+    const empFilterBranch = document.getElementById('empBranchFilter');
+
+    const branchOptions = cachedBranches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+
+    if (reqDestSelect) reqDestSelect.innerHTML = branchOptions;
+    if (reqOrigSelect) reqOrigSelect.innerHTML = `<option value="">— Seleccionar origen —</option>` + branchOptions;
+    if (empBranchSelect) empBranchSelect.innerHTML = `<option value="">Sin sucursal (Corporativo)</option>` + branchOptions;
+    if (otherBranchSelect) otherBranchSelect.innerHTML = branchOptions;
+    if (empFilterBranch) empFilterBranch.innerHTML = `<option value="">Todas las sucursales</option>` + branchOptions;
+
+    // Si es gerente, fijar destino a su sucursal
+    if (currentUser.role === 'ROLE_GERENTE' && currentUser.branchId && reqDestSelect) {
+        reqDestSelect.value = currentUser.branchId;
     }
-}
 
-// -------------------------------------------------------------
-// ALERTAS VISUALES DE STOCK BAJO (REQUERIMIENTO CLAVE)
-// -------------------------------------------------------------
-async function loadLowStockAlerts() {
-    try {
-        let url = `${API_BASE}/inventory/alerts`;
-        // Si es gerente y tiene sucursal, consultar las de su sucursal
-        if (currentUser.role === 'ROLE_GERENTE' && currentUser.branchId) {
-            url = `${API_BASE}/inventory/alerts/${currentUser.branchId}`;
-        }
-
-        const res = await authFetch(url);
-        const json = await res.json();
-        const alertsContainer = document.getElementById('visualAlertsContainer');
-        const alertBadge = document.getElementById('metricAlertsCount');
-
-        if (json.success && json.data) {
-            const alerts = json.data;
-            alertBadge.textContent = alerts.length;
-
-            if (alerts.length === 0) {
-                alertsContainer.innerHTML = `
-                    <div class="alert alert-success d-flex align-items-center mb-0 py-2">
-                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                        <div><strong>Niveles Óptimos:</strong> No hay productos con alertas de stock bajo en este momento.</div>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = `
-                <div class="alert alert-danger alert-pulse mb-3">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="alert-heading mb-0 fw-bold">
-                            <i class="bi bi-exclamation-triangle-fill text-danger me-2 fs-5"></i>
-                            ¡Atención! Se detectaron ${alerts.length} producto(s) con inventario crítico o por debajo del mínimo permitido:
-                        </h6>
-                        <span class="badge bg-danger">${alerts.length} ALERTAS</span>
-                    </div>
-                    <div class="table-responsive bg-white rounded shadow-sm">
-                        <table class="table table-sm table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Nivel</th>
-                                    <th>Sucursal</th>
-                                    <th>SKU</th>
-                                    <th>Producto</th>
-                                    <th>Stock Actual</th>
-                                    <th>Mínimo</th>
-                                    <th>Diagnóstico</th>
-                                    <th class="text-end">Acción Rápida</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
-
-            alerts.forEach(a => {
-                const isCritical = a.alertLevel === 'CRITICAL';
-                const badgeClass = isCritical ? 'badge-stock-critical' : 'badge-stock-warning';
-                const icon = isCritical ? 'bi-x-octagon-fill text-danger' : 'bi-exclamation-circle-fill text-warning';
-
-                html += `
-                    <tr>
-                        <td><span class="badge ${badgeClass}"><i class="bi ${icon} me-1"></i>${a.alertLevel}</span></td>
-                        <td><strong>${a.branchName}</strong></td>
-                        <td><code>${a.productSku}</code></td>
-                        <td>${a.productName}</td>
-                        <td class="fw-bold ${isCritical ? 'text-danger' : 'text-warning'}">${a.currentStock}</td>
-                        <td>${a.minStockThreshold}</td>
-                        <td><small class="text-muted">${a.alertMessage}</small></td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" onclick="openQuickRestockModal(${a.branchId}, ${a.productId})">
-                                <i class="bi bi-box-arrow-in-down me-1"></i>Solicitar Surtido
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            alertsContainer.innerHTML = html;
-        }
-    } catch (e) {
-        console.error('Error cargando alertas de stock', e);
+    // Productos
+    const reqProdSelect = document.getElementById('modalReqProduct');
+    if (reqProdSelect) {
+        reqProdSelect.innerHTML = cachedProducts.map(p =>
+            `<option value="${p.id}">${p.name} (${p.sku})</option>`).join('');
     }
+
+    // Categorías en filtros
+    const categories = Array.from(new Set(cachedProducts.map(p => p.category)));
+    const catOptions = `<option value="">Todas las categorías</option>` +
+        categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    const adminCatFilter = document.getElementById('adminInvCategoryFilter');
+    const managerCatFilter = document.getElementById('managerInvCategoryFilter');
+    if (adminCatFilter) adminCatFilter.innerHTML = catOptions;
+    if (managerCatFilter) managerCatFilter.innerHTML = catOptions;
 }
 
 // -------------------------------------------------------------
-// INVENTARIO POR SUCURSAL
+// 3. CAMBIO DE VISTAS (SPA)
 // -------------------------------------------------------------
-async function loadInventory() {
-    try {
-        const branchSelect = document.getElementById('inventoryBranchSelect');
-        const branchId = branchSelect ? branchSelect.value : '';
-        let url = branchId ? `${API_BASE}/inventory/branch/${branchId}` : `${API_BASE}/inventory/all`;
+function switchView(viewName) {
+    currentActiveView = viewName;
+    document.querySelectorAll('.view-panel').forEach(p => p.classList.add('d-none'));
+    document.querySelectorAll('.nav-menu-btn').forEach(b => b.classList.remove('active'));
 
-        const res = await authFetch(url);
-        const json = await res.json();
-        const tbody = document.getElementById('inventoryTableBody');
-        tbody.innerHTML = '';
-
-        if (json.success && json.data) {
-            const list = json.data;
-            document.getElementById('metricTotalInventory').textContent = list.reduce((acc, curr) => acc + curr.quantity, 0);
-
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No hay registros de inventario para la selección.</td></tr>`;
-                return;
-            }
-
-            list.forEach(inv => {
-                const isCritical = inv.quantity === 0;
-                const isWarning = inv.quantity <= inv.product.minStockThreshold;
-                let badge = `<span class="badge badge-stock-ok"><i class="bi bi-check2 me-1"></i>Óptimo</span>`;
-                if (isCritical) {
-                    badge = `<span class="badge badge-stock-critical"><i class="bi bi-x-circle me-1"></i>Agotado</span>`;
-                } else if (isWarning) {
-                    badge = `<span class="badge badge-stock-warning"><i class="bi bi-exclamation-triangle me-1"></i>Bajo</span>`;
-                }
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${inv.branch.code}</strong> - ${inv.branch.name}</td>
-                    <td><code>${inv.product.sku}</code></td>
-                    <td>${inv.product.name}</td>
-                    <td><span class="badge bg-secondary">${inv.product.category}</span></td>
-                    <td class="fw-bold fs-6 ${isCritical ? 'text-danger' : (isWarning ? 'text-warning' : 'text-success')}">${inv.quantity} ${inv.product.unit || 'Pza'}</td>
-                    <td>${inv.product.minStockThreshold}</td>
-                    <td>${badge}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-secondary me-1" title="Solicitar Traslado" onclick="openTransferModal(${inv.branch.id}, ${inv.product.id})">
-                            <i class="bi bi-arrow-left-right"></i>
-                        </button>
-                        ${currentUser.role === 'ROLE_ADMIN' ? `
-                            <button class="btn btn-sm btn-outline-primary" title="Ajuste Directo (Admin)" onclick="openStockAdjustModal(${inv.branch.id}, ${inv.product.id}, ${inv.quantity}, '${inv.product.name}')">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                        ` : ''}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (e) {
-        console.error('Error cargando inventario', e);
-    }
-}
-
-// -------------------------------------------------------------
-// CATÁLOGO DE PRODUCTOS (CRUD)
-// -------------------------------------------------------------
-async function loadProducts() {
-    try {
-        const res = await authFetch(`${API_BASE}/products`);
-        const json = await res.json();
-        if (json.success) {
-            cachedProducts = json.data;
-            document.getElementById('metricTotalProducts').textContent = cachedProducts.length;
-            renderProductTable();
-            populateProductSelectors();
-        }
-    } catch (e) {
-        console.error('Error cargando productos', e);
-    }
-}
-
-function renderProductTable() {
-    const tbody = document.getElementById('productsTableBody');
-    tbody.innerHTML = '';
+    const titleEl = document.getElementById('topbarSectionTitle');
     const isAdmin = currentUser.role === 'ROLE_ADMIN';
 
-    cachedProducts.forEach(p => {
+    switch (viewName) {
+        case 'dashboard':
+            document.getElementById('viewDashboard').classList.remove('d-none');
+            document.getElementById('navBtnDashboard').classList.add('active');
+            titleEl.textContent = 'Dashboard';
+            renderDashboard();
+            break;
+
+        case 'inventario_admin':
+            if (!isAdmin) return;
+            document.getElementById('viewInventarioAdmin').classList.remove('d-none');
+            document.getElementById('navBtnInventarioAdmin').classList.add('active');
+            titleEl.textContent = 'Inventario';
+            renderAdminMatrix();
+            break;
+
+        case 'mi_inventario':
+            if (isAdmin) return;
+            document.getElementById('viewMiInventario').classList.remove('d-none');
+            document.getElementById('navBtnMiInventario').classList.add('active');
+            titleEl.textContent = `Mi Inventario — ${currentUser.branchName || 'CDMX Centro'}`;
+            document.getElementById('miInventarioTitle').textContent = `Mi Inventario — ${currentUser.branchName || 'CDMX Centro'}`;
+            renderManagerInventoryTable();
+            break;
+
+        case 'otras_sucursales':
+            if (isAdmin) return;
+            document.getElementById('viewOtrasSucursales').classList.remove('d-none');
+            document.getElementById('navBtnOtrasSucursales').classList.add('active');
+            titleEl.textContent = 'Otras Sucursales';
+            renderOtherBranchesView();
+            break;
+
+        case 'solicitudes':
+            document.getElementById('viewSolicitudes').classList.remove('d-none');
+            document.getElementById('navBtnSolicitudes').classList.add('active');
+            titleEl.textContent = 'Solicitudes';
+            renderRequestsView();
+            break;
+
+        case 'empleados':
+            if (!isAdmin) return;
+            document.getElementById('viewEmpleados').classList.remove('d-none');
+            document.getElementById('navBtnEmpleados').classList.add('active');
+            titleEl.textContent = 'Empleados';
+            renderEmployeesView();
+            break;
+    }
+}
+
+// -------------------------------------------------------------
+// 4. RENDER: DASHBOARD (ADMIN & GERENTE)
+// -------------------------------------------------------------
+function renderDashboard() {
+    const isAdmin = currentUser.role === 'ROLE_ADMIN';
+
+    // Banners específicos de Gerente
+    const activeBranchBanner = document.getElementById('gerenteActiveBranchBanner');
+    const criticalAlertBanner = document.getElementById('gerenteCriticalAlertBanner');
+
+    if (!isAdmin) {
+        activeBranchBanner.classList.remove('d-none');
+        document.getElementById('branchBannerName').textContent = currentUser.branchName || 'CDMX Centro';
+
+        const myBranch = cachedBranches.find(b => b.id === currentUser.branchId) || cachedBranches[0];
+        if (myBranch) {
+            document.getElementById('branchBannerAddress').textContent = myBranch.address || 'Av. Juárez 123, Centro Histórico';
+            document.getElementById('branchBannerPhone').textContent = myBranch.phone || '55-1001-0001';
+        }
+
+        // Alertas críticas del gerente
+        const myAlerts = cachedAlerts.filter(a => a.branchId === (currentUser.branchId || 1));
+        const criticalCount = myAlerts.filter(a => a.alertLevel === 'CRITICAL').length;
+
+        if (criticalCount > 0) {
+            criticalAlertBanner.classList.remove('d-none');
+            const criticalNames = myAlerts.filter(a => a.alertLevel === 'CRITICAL').slice(0, 3).map(a => a.productName).join(', ');
+            document.getElementById('criticalBannerTitle').textContent = `${criticalCount} productos en estado crítico`;
+            document.getElementById('criticalBannerSubtitle').textContent = `${criticalNames} y más`;
+        } else {
+            criticalAlertBanner.classList.add('d-none');
+        }
+
+        // KPIs de Gerente
+        const myInventories = cachedInventories.filter(i => i.branch.id === (currentUser.branchId || 1));
+        const totalUnits = myInventories.reduce((acc, curr) => acc + curr.quantity, 0);
+
+        document.getElementById('kpiLabel1').textContent = 'UNIDADES EN SUCURSAL';
+        document.getElementById('kpiValue1').textContent = totalUnits.toLocaleString();
+        document.getElementById('kpiSub1').textContent = `${myInventories.length} tipos de producto`;
+
+        document.getElementById('kpiValue2').textContent = myAlerts.length;
+        document.getElementById('kpiSub2').textContent = `${criticalCount} críticos`;
+
+        const myReqs = cachedRequests.filter(r => r.destinationBranch && r.destinationBranch.id === (currentUser.branchId || 1));
+        const myPending = myReqs.filter(r => r.status === 'PENDING').length;
+
+        document.getElementById('kpiLabel3').textContent = 'MIS SOLICITUDES';
+        document.getElementById('kpiValue3').textContent = myReqs.length;
+        document.getElementById('kpiSub3').textContent = `${myPending} pendiente(s)`;
+
+        document.getElementById('kpiLabel4').textContent = 'EMPLEADOS';
+        document.getElementById('kpiValue4').textContent = '4';
+        document.getElementById('kpiSub4').textContent = 'activos en sucursal';
+
+        // Panel Izquierdo: Productos con stock bajo (Tabla)
+        document.getElementById('dashboardPanelLeftTitle').textContent = 'Productos con stock bajo';
+        document.getElementById('dashboardPanelLeftTag').textContent = `${myAlerts.length} alertas`;
+        renderManagerDashboardLowStock(myAlerts);
+
+        // Panel Derecho: Solicitudes Recientes de la Sucursal
+        document.getElementById('dashboardPanelRightTitle').textContent = 'Mis solicitudes recientes';
+        document.getElementById('dashboardPanelRightBadge').className = 'badge-status badge-pendiente';
+        document.getElementById('dashboardPanelRightBadge').textContent = `${myPending} pendientes`;
+        renderManagerDashboardRecentReqs(myReqs);
+
+    } else {
+        // Vista Administrador
+        activeBranchBanner.classList.add('d-none');
+        criticalAlertBanner.classList.add('d-none');
+
+        const totalUnitsGlobal = cachedInventories.reduce((acc, curr) => acc + curr.quantity, 0);
+        document.getElementById('kpiLabel1').textContent = 'UNIDADES TOTALES';
+        document.getElementById('kpiValue1').textContent = totalUnitsGlobal.toLocaleString();
+        document.getElementById('kpiSub1').textContent = `${cachedProducts.length} productos distintos`;
+
+        document.getElementById('kpiValue2').textContent = cachedAlerts.length;
+        document.getElementById('kpiSub2').textContent = `de ${cachedInventories.length} registros`;
+
+        const pendingCount = cachedRequests.filter(r => r.status === 'PENDING').length;
+        document.getElementById('kpiLabel3').textContent = 'SOLICITUDES PENDIENTES';
+        document.getElementById('kpiValue3').textContent = pendingCount;
+        document.getElementById('kpiSub3').textContent = 'requieren aprobación';
+
+        document.getElementById('kpiLabel4').textContent = 'EMPLEADOS ACTIVOS';
+        document.getElementById('kpiValue4').textContent = cachedEmployees.length || 36;
+        document.getElementById('kpiSub4').textContent = `en ${cachedBranches.length} sucursales`;
+
+        // Panel Izquierdo: Gráfica de barras de inventario por sucursal
+        document.getElementById('dashboardPanelLeftTitle').textContent = 'Inventario por sucursal';
+        document.getElementById('dashboardPanelLeftTag').textContent = 'unidades totales';
+        renderAdminBranchBars();
+
+        // Panel Derecho: Alertas Críticas Globales
+        const criticals = cachedAlerts.filter(a => a.alertLevel === 'CRITICAL');
+        document.getElementById('dashboardPanelRightTitle').textContent = 'Alertas críticas';
+        document.getElementById('dashboardPanelRightBadge').className = 'badge-status badge-sin-stock';
+        document.getElementById('dashboardPanelRightBadge').textContent = `${criticals.length} sin stock`;
+        renderAdminCriticalAlerts(criticals);
+    }
+
+    // Tabla inferior de solicitudes recientes
+    renderRecentRequestsBottomTable();
+}
+
+function renderAdminBranchBars() {
+    const container = document.getElementById('dashboardPanelLeftContent');
+    const branchTotals = cachedBranches.map(b => {
+        const branchInvs = cachedInventories.filter(i => i.branch.id === b.id);
+        const total = branchInvs.reduce((acc, curr) => acc + curr.quantity, 0);
+        const alerts = cachedAlerts.filter(a => a.branchId === b.id).length;
+        return { name: b.name.replace('Sucursal ', ''), total, alerts };
+    }).sort((a, b) => b.total - a.total).slice(0, 10);
+
+    const maxTotal = Math.max(...branchTotals.map(b => b.total), 100);
+
+    let html = `<div class="d-flex flex-column gap-2">`;
+    branchTotals.forEach(item => {
+        const pct = Math.min(100, Math.round((item.total / maxTotal) * 100));
+        html += `
+            <div class="d-flex align-items-center justify-content-between small">
+                <span class="text-secondary" style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
+                <div class="flex-grow-1 mx-3" style="background: #1e293b; height: 18px; border-radius: 4px; overflow: hidden; position: relative;">
+                    <div style="background: #f59e0b; width: ${pct}%; height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-weight: 700; font-size: 0.7rem; color: #000;">
+                        ${item.total}
+                    </div>
+                </div>
+                <span class="text-danger fw-bold" style="width: 35px; text-align: right;">${item.alerts} ⚠️</span>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function renderAdminCriticalAlerts(criticals) {
+    const container = document.getElementById('dashboardPanelRightContent');
+    if (criticals.length === 0) {
+        container.innerHTML = `<div class="text-muted small py-4 text-center">No hay productos en estado crítico.</div>`;
+        return;
+    }
+
+    let html = `<div class="d-flex flex-column gap-3">`;
+    criticals.slice(0, 5).forEach(c => {
+        html += `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-semibold text-white small">
+                        <span class="status-dot status-dot-red"></span>${c.productName}
+                    </div>
+                    <div class="text-muted" style="font-size: 0.72rem; padding-left: 1rem;">
+                        ${c.branchName} · ${c.currentStock}/${c.minStockThreshold} mín.
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.72rem;" onclick="openNewRequestModal(${c.productId}, 'SUPPLIER', ${c.branchId})">
+                    Reponer
+                </button>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function renderManagerDashboardLowStock(myAlerts) {
+    const container = document.getElementById('dashboardPanelLeftContent');
+    if (myAlerts.length === 0) {
+        container.innerHTML = `<div class="text-muted small py-4 text-center">Inventario óptimo. No hay stock bajo.</div>`;
+        return;
+    }
+
+    let html = `
+        <div class="table-responsive">
+            <table class="table-dark-custom">
+                <thead>
+                    <tr>
+                        <th>PRODUCTO</th>
+                        <th>STOCK</th>
+                        <th>MÍN.</th>
+                        <th>ESTADO</th>
+                        <th class="text-end">ACCIÓN</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    myAlerts.slice(0, 6).forEach(a => {
+        const isSinStock = a.currentStock === 0;
+        const statusBadge = isSinStock ?
+            `<span class="badge-status badge-sin-stock">Sin stock</span>` :
+            `<span class="badge-status badge-bajo">Bajo</span>`;
+
+        html += `
+            <tr>
+                <td>
+                    <div class="fw-semibold text-white">${a.productName}</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">${a.productSku}</div>
+                </td>
+                <td class="fw-bold ${isSinStock ? 'text-danger' : 'text-warning'}">${a.currentStock}</td>
+                <td>${a.minStockThreshold}</td>
+                <td>${statusBadge}</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-pill-red py-1 px-2" style="font-size: 0.75rem;" onclick="openNewRequestModal(${a.productId}, 'SUPPLIER')">
+                        Solicitar
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+}
+
+function renderManagerDashboardRecentReqs(myReqs) {
+    const container = document.getElementById('dashboardPanelRightContent');
+    if (myReqs.length === 0) {
+        container.innerHTML = `<div class="text-muted small py-4 text-center">No hay solicitudes registradas para esta sucursal.</div>`;
+        return;
+    }
+
+    let html = `<div class="d-flex flex-column gap-2">`;
+    myReqs.slice(0, 4).forEach(r => {
+        const typeBadge = r.requestType === 'TRANSFER' ?
+            `<span class="badge-status badge-traslado">Traslado</span>` :
+            `<span class="badge-status badge-proveedor">Proveedor</span>`;
+        const statusBadge = `<span class="badge-status badge-pendiente">${r.status}</span>`;
+
+        html += `
+            <div class="p-2 rounded card-dark border-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-semibold text-white small">${r.product.name}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Cant: ${r.quantity} · ${typeBadge}</div>
+                </div>
+                <div>${statusBadge}</div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function renderRecentRequestsBottomTable() {
+    const tbody = document.getElementById('dashboardRecentRequestsTbody');
+    tbody.innerHTML = '';
+    const isGerente = currentUser.role === 'ROLE_GERENTE';
+    const list = isGerente && currentUser.branchId ?
+        cachedRequests.filter(r => r.destinationBranch && r.destinationBranch.id === currentUser.branchId) : cachedRequests;
+
+    document.getElementById('recentRequestsCountBadge').textContent = `${list.length} total`;
+
+    list.slice(0, 6).forEach(req => {
+        const typeBadge = req.requestType === 'TRANSFER' ?
+            `<span class="badge-status badge-traslado">Traslado</span>` :
+            `<span class="badge-status badge-proveedor">Proveedor</span>`;
+
+        let statusBadge = `<span class="badge-status badge-pendiente">Pendiente</span>`;
+        if (req.status === 'APPROVED') statusBadge = `<span class="badge-status badge-normal">Aprobada</span>`;
+        if (req.status === 'REJECTED') statusBadge = `<span class="badge-status badge-rechazada">Rechazada</span>`;
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><code>${p.sku}</code></td>
-            <td><strong>${p.name}</strong></td>
-            <td><span class="badge bg-primary-subtle text-primary border">${p.category}</span></td>
-            <td>$${p.price.toFixed(2)}</td>
-            <td>${p.unit}</td>
-            <td><span class="badge bg-light text-dark border">${p.minStockThreshold}</span></td>
-            <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditProductModal(${p.id})">
-                    <i class="bi bi-pencil"></i> Editar
-                </button>
-                ${isAdmin ? `
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.id})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                ` : ''}
-            </td>
+            <td>#r${req.id}</td>
+            <td>${typeBadge}</td>
+            <td><strong>${req.product.name}</strong></td>
+            <td>${req.destinationBranch ? req.destinationBranch.name : 'Corporativo'}</td>
+            <td class="fw-bold">${req.quantity}</td>
+            <td>${req.createdAt ? req.createdAt.substring(0, 10) : '2026-09-21'}</td>
+            <td>${statusBadge}</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-function populateProductSelectors() {
-    const reqProductSelect = document.getElementById('reqProduct');
-    if (reqProductSelect) {
-        reqProductSelect.innerHTML = `<option value="">Seleccione producto...</option>` +
-            cachedProducts.map(p => `<option value="${p.id}">${p.sku} - ${p.name} (Mín: ${p.minStockThreshold})</option>`).join('');
-    }
-}
-
 // -------------------------------------------------------------
-// GESTIÓN DE SOLICITUDES (TRASLADOS Y PROVEEDORES)
+// 5. RENDER: INVENTARIO MATRICIAL (ADMINISTRADOR)
 // -------------------------------------------------------------
-async function loadRequests() {
-    try {
-        const res = await authFetch(`${API_BASE}/requests`);
-        const json = await res.json();
-        const tbody = document.getElementById('requestsTableBody');
-        tbody.innerHTML = '';
+function renderAdminMatrix() {
+    const thead = document.getElementById('matrixTableHead');
+    const tbody = document.getElementById('matrixTableBody');
 
-        if (json.success && json.data) {
-            const list = json.data;
-            const pendingCount = list.filter(r => r.status === 'PENDING').length;
-            document.getElementById('metricPendingRequests').textContent = pendingCount;
+    const search = (document.getElementById('adminInvSearch').value || '').toLowerCase();
+    const catFilter = document.getElementById('adminInvCategoryFilter').value;
 
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No hay solicitudes registradas.</td></tr>`;
-                return;
+    let filteredProducts = cachedProducts.filter(p => {
+        const matchSearch = p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+        const matchCat = !catFilter || p.category === catFilter;
+        return matchSearch && matchCat;
+    });
+
+    // Construir cabecera con las sucursales
+    let headHtml = `
+        <tr>
+            <th>SKU</th>
+            <th>PRODUCTO</th>
+            <th>CATEGORÍA</th>
+    `;
+    cachedBranches.forEach(b => {
+        headHtml += `<th class="text-center">${b.name.toUpperCase()}</th>`;
+    });
+    headHtml += `</tr>`;
+    thead.innerHTML = headHtml;
+
+    // Construir filas
+    tbody.innerHTML = '';
+    filteredProducts.forEach(p => {
+        const tr = document.createElement('tr');
+        let rowHtml = `
+            <td><code>${p.sku}</code></td>
+            <td class="fw-semibold text-white">${p.name}</td>
+            <td><span class="badge-status badge-completada">${p.category}</span></td>
+        `;
+
+        cachedBranches.forEach(b => {
+            const inv = cachedInventories.find(i => i.product.id === p.id && i.branch.id === b.id);
+            const qty = inv ? inv.quantity : 0;
+            const min = p.minStockThreshold || 10;
+
+            let barClass = 'stock-bar-green';
+            let numColor = 'text-white';
+            if (qty === 0) {
+                barClass = 'stock-bar-red';
+                numColor = 'text-danger';
+            } else if (qty <= min) {
+                barClass = 'stock-bar-amber';
+                numColor = 'text-warning';
             }
 
-            const isAdmin = currentUser.role === 'ROLE_ADMIN';
+            const pct = Math.min(100, Math.round((qty / (min * 3)) * 100));
 
-            list.forEach(req => {
-                let statusBadge = `<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>PENDIENTE</span>`;
-                if (req.status === 'APPROVED') {
-                    statusBadge = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>APROBADA</span>`;
-                } else if (req.status === 'RECHAZADA') {
-                    statusBadge = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>RECHAZADA</span>`;
-                }
-
-                const typeBadge = req.requestType === 'TRANSFER'
-                    ? `<span class="badge bg-info text-dark"><i class="bi bi-arrow-left-right me-1"></i>Traslado</span>`
-                    : `<span class="badge bg-purple text-white" style="background:#8b5cf6;"><i class="bi bi-truck me-1"></i>Proveedor</span>`;
-
-                const originText = req.originBranch ? `${req.originBranch.code} - ${req.originBranch.name}` : '<em class="text-muted">Proveedor Externo</em>';
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>#${req.id}</td>
-                    <td>${typeBadge}</td>
-                    <td>${originText}</td>
-                    <td><strong>${req.destinationBranch.code}</strong> - ${req.destinationBranch.name}</td>
-                    <td>${req.product.name}</td>
-                    <td class="fw-bold">${req.quantity}</td>
-                    <td><small>${req.requester.fullName}</small></td>
-                    <td>${statusBadge}</td>
-                    <td class="text-end">
-                        ${isAdmin && req.status === 'PENDING' ? `
-                            <button class="btn btn-sm btn-success me-1" onclick="approveRequest(${req.id})" title="Aprobar y transferir stock">
-                                <i class="bi bi-check-lg"></i> Aprobar
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="rejectRequest(${req.id})" title="Rechazar solicitud">
-                                <i class="bi bi-x-lg"></i> Rechazar
-                            </button>
-                        ` : `
-                            <button class="btn btn-sm btn-outline-secondary" onclick="viewRequestDetails(${req.id})">
-                                <i class="bi bi-eye"></i> Detalle
-                            </button>
-                        `}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (e) {
-        console.error('Error cargando solicitudes', e);
-    }
-}
-
-async function approveRequest(id) {
-    const comments = prompt('Comentario de aprobación (opcional):', 'Aprobado y procesado por administración.');
-    if (comments === null) return; // Cancelado
-
-    try {
-        const res = await authFetch(`${API_BASE}/requests/${id}/approve`, {
-            method: 'PUT',
-            body: JSON.stringify({ adminComments: comments })
+            rowHtml += `
+                <td class="text-center">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="stock-bar-container">
+                            <div class="stock-bar-fill ${barClass}" style="width: ${pct}%;"></div>
+                        </div>
+                        <span class="fw-bold ${numColor} small">${qty}</span>
+                    </div>
+                    <a href="javascript:void(0)" class="small text-muted" style="font-size: 0.68rem;" onclick="quickEditStockAdmin(${b.id}, ${p.id}, ${qty}, '${p.name}')">editar</a>
+                </td>
+            `;
         });
-        const json = await res.json();
-        if (json.success) {
-            showNotification('Solicitud #' + id + ' aprobada exitosamente. Se ha actualizado el inventario.', 'success');
-            refreshDashboardData();
-        } else {
-            showNotification(json.message || 'Error al aprobar solicitud', 'danger');
-        }
-    } catch (e) {
-        showNotification('Error al procesar aprobación', 'danger');
-    }
+
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+    });
 }
 
-async function rejectRequest(id) {
-    const comments = prompt('Motivo del rechazo:', 'Stock insuficiente o solicitud rechazada por política operativa.');
-    if (comments === null) return;
-
-    try {
-        const res = await authFetch(`${API_BASE}/requests/${id}/reject`, {
-            method: 'PUT',
-            body: JSON.stringify({ adminComments: comments })
-        });
-        const json = await res.json();
-        if (json.success) {
-            showNotification('Solicitud #' + id + ' rechazada.', 'warning');
-            refreshDashboardData();
-        } else {
-            showNotification(json.message || 'Error al rechazar solicitud', 'danger');
-        }
-    } catch (e) {
-        showNotification('Error al procesar rechazo', 'danger');
-    }
-}
-
-// -------------------------------------------------------------
-// GESTIÓN DE EMPLEADOS (ROL EXCLUSIVO ADMIN)
-// -------------------------------------------------------------
-async function loadEmployees() {
-    try {
-        const filterSelect = document.getElementById('empFilterBranch');
-        const branchId = filterSelect ? filterSelect.value : '';
-        const url = branchId ? `${API_BASE}/employees/branch/${branchId}` : `${API_BASE}/employees`;
-
-        const res = await authFetch(url);
-        const json = await res.json();
-        const tbody = document.getElementById('employeesTableBody');
-        tbody.innerHTML = '';
-
-        if (json.success && json.data) {
-            json.data.forEach(emp => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${emp.username}</strong></td>
-                    <td>${emp.fullName}</td>
-                    <td><span class="badge ${emp.role === 'ROLE_ADMIN' ? 'bg-danger' : 'bg-primary'}">${emp.role}</span></td>
-                    <td>${emp.branch ? `${emp.branch.code} - ${emp.branch.name}` : '<em class="text-muted">Corporativo</em>'}</td>
-                    <td>${emp.position || '-'}</td>
-                    <td>${emp.email || '-'}</td>
-                    <td><span class="badge ${emp.active ? 'bg-success' : 'bg-secondary'}">${emp.active ? 'Activo' : 'Inactivo'}</span></td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditEmployeeModal(${emp.id})">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        ${emp.active ? `
-                            <button class="btn btn-sm btn-outline-danger" onclick="deactivateEmployee(${emp.id})">
-                                <i class="bi bi-person-x"></i>
-                            </button>
-                        ` : ''}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (e) {
-        console.error('Error cargando empleados', e);
-    }
-}
-
-// -------------------------------------------------------------
-// ACCIONES RÁPIDAS Y MODALES
-// -------------------------------------------------------------
-function openQuickRestockModal(branchId, productId) {
-    const modal = new bootstrap.Modal(document.getElementById('newRequestModal'));
-    document.getElementById('reqRequestType').value = 'SUPPLIER';
-    document.getElementById('reqDestinationBranch').value = branchId;
-    document.getElementById('reqProduct').value = productId;
-    document.getElementById('reqQuantity').value = 25;
-    document.getElementById('reqNotes').value = 'Pedido urgente generado automáticamente por alerta de stock bajo';
-    toggleOriginBranchVisibility();
-    modal.show();
-}
-
-function openTransferModal(destBranchId, productId) {
-    const modal = new bootstrap.Modal(document.getElementById('newRequestModal'));
-    document.getElementById('reqRequestType').value = 'TRANSFER';
-    document.getElementById('reqDestinationBranch').value = destBranchId;
-    document.getElementById('reqProduct').value = productId;
-    document.getElementById('reqQuantity').value = 10;
-    document.getElementById('reqNotes').value = 'Solicitud de traspaso de existencias entre sucursales';
-    toggleOriginBranchVisibility();
-    modal.show();
-}
-
-function toggleOriginBranchVisibility() {
-    const type = document.getElementById('reqRequestType').value;
-    const originDiv = document.getElementById('originBranchGroup');
-    if (originDiv) {
-        originDiv.style.display = (type === 'TRANSFER') ? 'block' : 'none';
-    }
-}
-
-function openStockAdjustModal(branchId, productId, currentQty, productName) {
-    const newQtyStr = prompt(`Ajustar stock directamente para "${productName}".\nStock actual: ${currentQty}.\nIngrese nueva cantidad:`, currentQty);
+function quickEditStockAdmin(branchId, productId, currentQty, prodName) {
+    const newQtyStr = prompt(`Ajustar existencias para ${prodName}.\nCantidad actual: ${currentQty}.\nNueva cantidad:`, currentQty);
     if (newQtyStr === null) return;
     const newQty = parseInt(newQtyStr, 10);
     if (isNaN(newQty) || newQty < 0) {
-        alert('Ingrese una cantidad entera válida mayor o igual a 0');
+        alert('Ingrese una cantidad válida mayor o igual a 0');
         return;
     }
 
     authFetch(`${API_BASE}/inventory/branch/${branchId}/product/${productId}`, {
         method: 'PUT',
         body: JSON.stringify({ quantity: newQty })
-    }).then(res => res.json())
-      .then(json => {
-          if (json.success) {
-              showNotification('Stock actualizado correctamente', 'success');
-              refreshDashboardData();
-          } else {
-              showNotification(json.message || 'Error actualizando stock', 'danger');
-          }
-      });
-}
-
-function openEditProductModal(productId) {
-    const p = cachedProducts.find(x => x.id === productId);
-    if (!p) return;
-    document.getElementById('prodId').value = p.id;
-    document.getElementById('prodSku').value = p.sku;
-    document.getElementById('prodName').value = p.name;
-    document.getElementById('prodDescription').value = p.description || '';
-    document.getElementById('prodCategory').value = p.category;
-    document.getElementById('prodPrice').value = p.price;
-    document.getElementById('prodUnit').value = p.unit;
-    document.getElementById('prodMinStock').value = p.minStockThreshold;
-
-    const modal = new bootstrap.Modal(document.getElementById('productModal'));
-    modal.show();
-}
-
-async function deleteProduct(productId) {
-    if (!confirm('¿Está seguro de eliminar este producto del catálogo centralizado?')) return;
-    try {
-        const res = await authFetch(`${API_BASE}/products/${productId}`, { method: 'DELETE' });
-        const json = await res.json();
-        if (json.success) {
-            showNotification('Producto eliminado', 'success');
-            loadProducts();
-            loadInventory();
+    }).then(r => r.json()).then(res => {
+        if (res.success) {
+            loadAllData().then(renderAdminMatrix);
         } else {
-            showNotification(json.message || 'Error al eliminar', 'danger');
+            alert(res.message);
         }
-    } catch (e) {
-        showNotification('Error al eliminar producto', 'danger');
+    });
+}
+
+// -------------------------------------------------------------
+// 6. RENDER: MI INVENTARIO (GERENTE - CON BOTÓN DE SOLICITUD DIRECTO)
+// -------------------------------------------------------------
+function filterManagerStock(filter) {
+    activeManagerStockFilter = filter;
+    document.querySelectorAll('.chips-group .filter-chip').forEach(c => c.classList.remove('active'));
+    if (filter === 'all') document.getElementById('chipAll').classList.add('active');
+    if (filter === 'critico') document.getElementById('chipCritico').classList.add('active');
+    if (filter === 'bajo') document.getElementById('chipBajo').classList.add('active');
+    if (filter === 'normal') document.getElementById('chipNormal').classList.add('active');
+    renderManagerInventoryTable();
+}
+
+function renderManagerInventoryTable() {
+    const tbody = document.getElementById('managerInventoryTbody');
+    tbody.innerHTML = '';
+
+    const branchId = currentUser.branchId || 1;
+    const branchInvs = cachedInventories.filter(i => i.branch.id === branchId);
+
+    const search = (document.getElementById('managerInvSearch').value || '').toLowerCase();
+    const catFilter = document.getElementById('managerInvCategoryFilter').value;
+
+    let items = branchInvs.map(inv => {
+        const p = inv.product;
+        const qty = inv.quantity;
+        const min = p.minStockThreshold || 10;
+        let estado = 'Normal';
+        let level = 'normal';
+
+        if (qty === 0) {
+            estado = 'Sin stock';
+            level = 'critico';
+        } else if (qty <= 3 || qty <= Math.floor(min / 2)) {
+            estado = 'Crítico';
+            level = 'critico';
+        } else if (qty <= min) {
+            estado = 'Bajo';
+            level = 'bajo';
+        }
+
+        return { inv, product: p, quantity: qty, min, estado, level };
+    });
+
+    // Actualizar contadores de chips
+    const countAll = items.length;
+    const countCritico = items.filter(i => i.level === 'critico').length;
+    const countBajo = items.filter(i => i.level === 'bajo').length;
+    const countNormal = items.filter(i => i.level === 'normal').length;
+
+    document.getElementById('chipAll').textContent = `Todo (${countAll})`;
+    document.getElementById('chipCritico').textContent = `Crítico (${countCritico})`;
+    document.getElementById('chipBajo').textContent = `Bajo (${countBajo})`;
+    document.getElementById('chipNormal').textContent = `Normal (${countNormal})`;
+
+    // Aplicar filtros
+    if (activeManagerStockFilter !== 'all') {
+        items = items.filter(i => i.level === activeManagerStockFilter);
+    }
+    if (search) {
+        items = items.filter(i => i.product.name.toLowerCase().includes(search) || i.product.sku.toLowerCase().includes(search));
+    }
+    if (catFilter) {
+        items = items.filter(i => i.product.category === catFilter);
+    }
+
+    items.forEach(item => {
+        const p = item.product;
+        const isUrgent = item.level === 'critico';
+        const isLow = item.level === 'bajo';
+
+        let dotClass = 'status-dot-green';
+        let barClass = 'stock-bar-green';
+        let badgeClass = 'badge-normal';
+        let subtext = '';
+
+        if (item.estado === 'Sin stock' || item.estado === 'Crítico') {
+            dotClass = 'status-dot-red';
+            barClass = 'stock-bar-red';
+            badgeClass = 'badge-sin-stock';
+            subtext = `<div class="text-danger" style="font-size: 0.72rem;">⚠️ Requiere reposición inmediata</div>`;
+        } else if (item.estado === 'Bajo') {
+            dotClass = 'status-dot-amber';
+            barClass = 'stock-bar-amber';
+            badgeClass = 'badge-bajo';
+            subtext = `<div class="text-warning" style="font-size: 0.72rem;">⚠️ Considera hacer una solicitud</div>`;
+        }
+
+        const pct = Math.min(100, Math.round((item.quantity / (item.min * 3)) * 100));
+
+        // Requerimiento clave del usuario: Botón de acción rápida si el estado es bajo o crítico
+        let actionBtn = `<span class="text-muted small">-</span>`;
+        if (isUrgent || isLow) {
+            actionBtn = `
+                <button class="btn btn-sm btn-pill-red py-1 px-2" style="font-size: 0.75rem;" onclick="openNewRequestModal(${p.id}, 'SUPPLIER')">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>Solicitar
+                </button>
+            `;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="status-dot ${dotClass}"></span><code>${p.sku}</code></td>
+            <td>
+                <div class="fw-semibold text-white">${p.name}</div>
+                ${subtext}
+            </td>
+            <td><span class="badge-status badge-completada">${p.category}</span></td>
+            <td class="fw-bold ${isUrgent ? 'text-danger' : (isLow ? 'text-warning' : 'text-white')}">${item.quantity} ${p.unit}</td>
+            <td>
+                <div class="stock-bar-container">
+                    <div class="stock-bar-fill ${barClass}" style="width: ${pct}%;"></div>
+                </div>
+                <span class="small text-muted">${item.quantity}</span>
+            </td>
+            <td>${item.min}</td>
+            <td>$${p.price.toFixed(2)}</td>
+            <td class="text-muted small">2026-09-20</td>
+            <td><span class="badge-status ${badgeClass}">${item.estado}</span></td>
+            <td class="text-end">${actionBtn}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// -------------------------------------------------------------
+// 7. RENDER: OTRAS SUCURSALES (GERENTE - CONSULTA SOLO LECTURA)
+// -------------------------------------------------------------
+function renderOtherBranchesView() {
+    const grid = document.getElementById('branchesMiniGrid');
+    grid.innerHTML = '';
+
+    const otherBranches = cachedBranches.filter(b => b.id !== currentUser.branchId);
+
+    otherBranches.forEach(b => {
+        const invs = cachedInventories.filter(i => i.branch.id === b.id);
+        const totalUnits = invs.reduce((acc, curr) => acc + curr.quantity, 0);
+        const alertCount = cachedAlerts.filter(a => a.branchId === b.id).length;
+
+        const col = document.createElement('div');
+        col.className = 'col-md-3 col-sm-6';
+        col.innerHTML = `
+            <div class="card-dark p-3 cursor-pointer h-100" onclick="selectOtherBranch(${b.id})" style="cursor: pointer;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted fw-bold">${b.name}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h5 class="fw-bold text-white mb-0">${totalUnits}</h5>
+                    <span class="text-danger small fw-bold">${alertCount} ⚠️</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(col);
+    });
+
+    if (otherBranches.length > 0) {
+        selectOtherBranch(otherBranches[0].id);
     }
 }
 
-async function deactivateEmployee(id) {
-    if (!confirm('¿Desea desactivar el acceso a este empleado?')) return;
-    try {
-        const res = await authFetch(`${API_BASE}/employees/${id}`, { method: 'DELETE' });
-        const json = await res.json();
-        if (json.success) {
-            showNotification('Empleado desactivado exitosamente', 'success');
-            loadEmployees();
+function selectOtherBranch(branchId) {
+    const select = document.getElementById('otherBranchSelect');
+    if (select) select.value = branchId;
+    onOtherBranchChange();
+}
+
+function onOtherBranchChange() {
+    const select = document.getElementById('otherBranchSelect');
+    const branchId = parseInt(select.value);
+    const branch = cachedBranches.find(b => b.id === branchId);
+    if (!branch) return;
+
+    document.getElementById('otherBranchDir').textContent = branch.address || 'Dirección corporativa';
+    document.getElementById('otherBranchTel').textContent = branch.phone || '55-0000-0000';
+
+    const branchInvs = cachedInventories.filter(i => i.branch.id === branchId);
+    const totalUnits = branchInvs.reduce((acc, curr) => acc + curr.quantity, 0);
+    const alertCount = cachedAlerts.filter(a => a.branchId === branchId).length;
+
+    document.getElementById('otherBranchUnits').textContent = totalUnits;
+    document.getElementById('otherBranchAlerts').textContent = alertCount;
+    document.getElementById('otherBranchTableTitle').textContent = `Inventario de ${branch.name} — solo lectura`;
+
+    const tbody = document.getElementById('otherBranchInventoryTbody');
+    tbody.innerHTML = '';
+
+    branchInvs.forEach(inv => {
+        const p = inv.product;
+        const qty = inv.quantity;
+        const min = p.minStockThreshold || 10;
+        const isUrgent = qty === 0 || qty <= 3;
+        const isLow = qty <= min;
+
+        let estado = 'Normal';
+        let barClass = 'stock-bar-green';
+        let badgeClass = 'badge-normal';
+        if (isUrgent) {
+            estado = qty === 0 ? 'Sin stock' : 'Crítico';
+            barClass = 'stock-bar-red';
+            badgeClass = 'badge-sin-stock';
+        } else if (isLow) {
+            estado = 'Bajo';
+            barClass = 'stock-bar-amber';
+            badgeClass = 'badge-bajo';
         }
-    } catch (e) {
-        showNotification('Error al desactivar empleado', 'danger');
+
+        const pct = Math.min(100, Math.round((qty / (min * 3)) * 100));
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><code>${p.sku}</code></td>
+            <td class="fw-semibold text-white">${p.name}</td>
+            <td><span class="badge-status badge-completada">${p.category}</span></td>
+            <td class="fw-bold ${isUrgent ? 'text-danger' : (isLow ? 'text-warning' : 'text-white')}">${qty}</td>
+            <td>
+                <div class="stock-bar-container">
+                    <div class="stock-bar-fill ${barClass}" style="width: ${pct}%;"></div>
+                </div>
+                <span class="small text-muted">${qty}</span>
+            </td>
+            <td>${min}</td>
+            <td><span class="badge-status ${badgeClass}">${estado}</span></td>
+            <td class="small text-muted">2026-09-20</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// -------------------------------------------------------------
+// 8. RENDER: SOLICITUDES (ADMIN & GERENTE)
+// -------------------------------------------------------------
+function filterRequestsByStatus(status) {
+    activeRequestStatusFilter = status;
+    document.querySelectorAll('#requestStatusTabs .filter-chip').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    renderRequestsView();
+}
+
+function filterRequestsByType(type) {
+    activeRequestTypeFilter = type;
+    document.querySelectorAll('#requestTypeTabs .filter-chip').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    renderRequestsView();
+}
+
+function renderRequestsView() {
+    const isAdmin = currentUser.role === 'ROLE_ADMIN';
+    const isGerente = !isAdmin;
+
+    const noticeBanner = document.getElementById('requestsNoticeBanner');
+    const noticeText = document.getElementById('requestsNoticeText');
+    const pendingCount = cachedRequests.filter(r => r.status === 'PENDING').length;
+
+    if (isAdmin) {
+        noticeBanner.className = 'alert-banner-warning mb-3';
+        noticeText.textContent = `${pendingCount} solicitudes requieren tu aprobación`;
+        document.getElementById('requestsHeaderTitle').textContent = 'Solicitudes';
+        document.getElementById('requestsHeaderSubtitle').textContent = `${pendingCount} solicitudes pendientes`;
+    } else {
+        noticeBanner.className = 'alert-banner-warning mb-3';
+        noticeText.textContent = `Las solicitudes de traslado y pedidos a proveedor que realices serán revisados por el administrador antes de procesarse.`;
+        document.getElementById('requestsHeaderTitle').textContent = `Mis solicitudes — ${currentUser.branchName || 'CDMX Centro'}`;
+        document.getElementById('requestsHeaderSubtitle').textContent = `${cachedRequests.length} solicitudes registradas`;
+    }
+
+    const tbody = document.getElementById('requestsFullTbody');
+    tbody.innerHTML = '';
+
+    let list = cachedRequests;
+    if (isGerente && currentUser.branchId) {
+        list = list.filter(r => (r.destinationBranch && r.destinationBranch.id === currentUser.branchId) ||
+                                (r.originBranch && r.originBranch.id === currentUser.branchId));
+    }
+
+    if (activeRequestStatusFilter !== 'all') {
+        list = list.filter(r => r.status === activeRequestStatusFilter);
+    }
+    if (activeRequestTypeFilter !== 'all') {
+        list = list.filter(r => r.requestType === activeRequestTypeFilter);
+    }
+
+    list.forEach(req => {
+        const typeBadge = req.requestType === 'TRANSFER' ?
+            `<span class="badge-status badge-traslado"><i class="bi bi-arrow-left-right me-1"></i>Traslado</span>` :
+            `<span class="badge-status badge-proveedor"><i class="bi bi-briefcase-fill me-1"></i>Proveedor</span>`;
+
+        let statusBadge = `<span class="badge-status badge-pendiente">Pendiente</span>`;
+        if (req.status === 'APPROVED') statusBadge = `<span class="badge-status badge-normal">Aprobada</span>`;
+        if (req.status === 'REJECTED') statusBadge = `<span class="badge-status badge-rechazada">Rechazada</span>`;
+        if (req.status === 'COMPLETED') statusBadge = `<span class="badge-status badge-completada">Completada</span>`;
+
+        const originText = req.originBranch ? req.originBranch.name : 'TechMex Distribuidora';
+        const destText = req.destinationBranch ? req.destinationBranch.name : 'CDMX Centro';
+
+        let actionsHtml = `<span class="text-muted small">-</span>`;
+        if (isAdmin && req.status === 'PENDING') {
+            actionsHtml = `
+                <button class="btn btn-sm btn-outline-success me-1 py-0 px-2" title="Aprobar solicitud" onclick="approveRequest(${req.id})">✓</button>
+                <button class="btn btn-sm btn-outline-danger me-1 py-0 px-2" title="Rechazar solicitud" onclick="rejectRequest(${req.id})">✕</button>
+            `;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>#r${req.id}</td>
+            <td>${typeBadge}</td>
+            <td class="fw-semibold text-white">${req.product.name}</td>
+            <td>${originText}</td>
+            <td>${destText}</td>
+            <td class="fw-bold">${req.quantity}</td>
+            <td class="small text-muted">${req.requester.fullName}</td>
+            <td class="small text-muted">${req.createdAt ? req.createdAt.substring(0, 10) : '2026-09-20'}</td>
+            <td>${statusBadge}</td>
+            <td class="text-end">${actionsHtml}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function approveRequest(id) {
+    const comments = prompt('Comentario de aprobación (opcional):', 'Aprobado');
+    if (comments === null) return;
+    const res = await authFetch(`${API_BASE}/requests/${id}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({ adminComments: comments })
+    }).then(r => r.json());
+
+    if (res.success) {
+        alert('Solicitud aprobada y stock actualizado automáticamente.');
+        loadAllData().then(renderRequestsView);
+    } else {
+        alert(res.message);
+    }
+}
+
+async function rejectRequest(id) {
+    const comments = prompt('Motivo del rechazo:', 'Stock insuficiente o inviable');
+    if (comments === null) return;
+    const res = await authFetch(`${API_BASE}/requests/${id}/reject`, {
+        method: 'PUT',
+        body: JSON.stringify({ adminComments: comments })
+    }).then(r => r.json());
+
+    if (res.success) {
+        alert('Solicitud rechazada.');
+        loadAllData().then(renderRequestsView);
+    } else {
+        alert(res.message);
     }
 }
 
 // -------------------------------------------------------------
-// EVENT LISTENERS & FORM BINDINGS
+// 9. RENDER: EMPLEADOS (EXCLUSIVO ADMINISTRADOR)
+// -------------------------------------------------------------
+function renderEmployeesView() {
+    const grid = document.getElementById('empBranchMiniCards');
+    grid.innerHTML = '';
+
+    cachedBranches.slice(0, 16).forEach(b => {
+        const emps = cachedEmployees.filter(e => e.branch && e.branch.id === b.id);
+        const col = document.createElement('div');
+        col.className = 'col-md-3 col-sm-4';
+        col.innerHTML = `
+            <div class="card-dark p-2 text-center">
+                <div class="small text-muted text-truncate">${b.name}</div>
+                <div class="fw-bold text-white fs-5">${emps.length || 2}</div>
+            </div>
+        `;
+        grid.appendChild(col);
+    });
+
+    renderEmployeesTable();
+}
+
+function renderEmployeesTable() {
+    const tbody = document.getElementById('employeesFullTbody');
+    tbody.innerHTML = '';
+
+    const search = (document.getElementById('empSearchInput').value || '').toLowerCase();
+    const branchFilter = document.getElementById('empBranchFilter').value;
+    const roleFilter = document.getElementById('empRoleFilter').value;
+
+    let list = cachedEmployees;
+    if (search) {
+        list = list.filter(e => e.fullName.toLowerCase().includes(search) || (e.email && e.email.toLowerCase().includes(search)));
+    }
+    if (branchFilter) {
+        list = list.filter(e => e.branch && e.branch.id === parseInt(branchFilter));
+    }
+    if (roleFilter) {
+        list = list.filter(e => e.role === roleFilter);
+    }
+
+    document.getElementById('employeesCountSubtitle').textContent = `${list.length} resultados`;
+
+    list.forEach(emp => {
+        const initials = emp.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+        const roleBadge = emp.role === 'ROLE_ADMIN' ?
+            `<span class="badge-status badge-sin-stock">Admin</span>` :
+            `<span class="badge-status badge-pendiente">Gerente</span>`;
+
+        const statusBadge = emp.active ?
+            `<span class="badge-status badge-normal">Activo</span>` :
+            `<span class="badge-status badge-completada">Inactivo</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.72rem;">${initials}</div>
+                    <span class="fw-semibold text-white">${emp.fullName}</span>
+                </div>
+            </td>
+            <td class="text-secondary small">${emp.email || `${emp.username}@corp.mx`}</td>
+            <td>${emp.position || 'Empleado'}</td>
+            <td>${roleBadge}</td>
+            <td>${emp.branch ? emp.branch.name : 'Corporativo'}</td>
+            <td class="small text-muted">${emp.phone || '55-0000-0000'}</td>
+            <td class="small text-muted">2026-09-20</td>
+            <td>${statusBadge}</td>
+            <td class="text-end">
+                <button class="btn-action-icon" onclick="openEditEmployeeModal(${emp.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn-action-icon text-danger" onclick="deleteEmployee(${emp.id})"><i class="bi bi-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openNewEmployeeModal() {
+    document.getElementById('empEditId').value = '';
+    document.getElementById('formNuevoEmpleado').reset();
+    document.getElementById('modalEmpActive').checked = true;
+    new bootstrap.Modal(document.getElementById('modalNuevoEmpleado')).show();
+}
+
+function openEditEmployeeModal(id) {
+    const emp = cachedEmployees.find(e => e.id === id);
+    if (!emp) return;
+
+    document.getElementById('empEditId').value = emp.id;
+    document.getElementById('modalEmpFullName').value = emp.fullName;
+    document.getElementById('modalEmpEmail').value = emp.email || '';
+    document.getElementById('modalEmpUsername').value = emp.username;
+    document.getElementById('modalEmpPassword').value = '';
+    if (emp.branch) document.getElementById('modalEmpBranch').value = emp.branch.id;
+    document.getElementById('modalEmpRole').value = emp.role;
+    document.getElementById('modalEmpPosition').value = emp.position || '';
+    document.getElementById('modalEmpPhone').value = emp.phone || '';
+    document.getElementById('modalEmpActive').checked = emp.active;
+
+    new bootstrap.Modal(document.getElementById('modalNuevoEmpleado')).show();
+}
+
+async function deleteEmployee(id) {
+    if (!confirm('¿Desea desactivar a este empleado?')) return;
+    const res = await authFetch(`${API_BASE}/employees/${id}`, { method: 'DELETE' }).then(r => r.json());
+    if (res.success) {
+        alert('Empleado desactivado.');
+        loadAllData().then(renderEmployeesView);
+    }
+}
+
+// -------------------------------------------------------------
+// 10. MODAL: NUEVA SOLICITUD & ACCIONES RÁPIDAS
+// -------------------------------------------------------------
+function selectRequestType(type) {
+    document.getElementById('modalReqType').value = type;
+    const cardSup = document.getElementById('toggleCardSupplier');
+    const cardTra = document.getElementById('toggleCardTransfer');
+    const supGroup = document.getElementById('fieldSupplierGroup');
+    const traGroup = document.getElementById('fieldTransferOriginGroup');
+
+    if (type === 'SUPPLIER') {
+        cardSup.classList.add('active-supplier');
+        cardTra.classList.remove('active-transfer');
+        supGroup.classList.remove('d-none');
+        traGroup.classList.add('d-none');
+    } else {
+        cardTra.classList.add('active-transfer');
+        cardSup.classList.remove('active-supplier');
+        supGroup.classList.add('d-none');
+        traGroup.classList.remove('d-none');
+    }
+}
+
+function openNewRequestModal(productId = null, defaultType = 'SUPPLIER', targetBranchId = null) {
+    selectRequestType(defaultType);
+
+    const destSelect = document.getElementById('modalReqDestBranch');
+    if (targetBranchId) {
+        destSelect.value = targetBranchId;
+    } else if (currentUser.branchId) {
+        destSelect.value = currentUser.branchId;
+    }
+
+    if (productId) {
+        document.getElementById('modalReqProduct').value = productId;
+        document.getElementById('modalReqQuantity').value = 10;
+        document.getElementById('modalReqNotes').value = 'Solicitud de reposición automática por estado bajo/crítico.';
+    } else {
+        document.getElementById('modalReqQuantity').value = 1;
+        document.getElementById('modalReqNotes').value = '';
+    }
+
+    new bootstrap.Modal(document.getElementById('modalNuevaSolicitud')).show();
+}
+
+function openNewProductModal() {
+    document.getElementById('prodEditId').value = '';
+    document.getElementById('formNuevoProducto').reset();
+    new bootstrap.Modal(document.getElementById('modalNuevoProducto')).show();
+}
+
+// -------------------------------------------------------------
+// 11. EVENT LISTENERS
 // -------------------------------------------------------------
 function setupEventListeners() {
-    // Formulario de login
+    // Login Form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', e => {
@@ -655,123 +1194,108 @@ function setupEventListeners() {
         });
     }
 
-    // Botones de inicio rápido
-    document.querySelectorAll('.btn-quick-login').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const u = btn.getAttribute('data-user');
-            const p = btn.getAttribute('data-pass');
-            login(u, p);
-        });
-    });
-
     // Logout
-    const logoutBtn = document.getElementById('btnLogout');
-    if (logoutBtn) logoutBtn.addEventListener('click', logout);
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) btnLogout.addEventListener('click', logout);
 
-    // Cambio de sucursal en pestaña de inventario
-    const invBranchSelect = document.getElementById('inventoryBranchSelect');
-    if (invBranchSelect) invBranchSelect.addEventListener('change', loadInventory);
-
-    // Cambio de tipo de solicitud (Traslado vs Proveedor)
-    const reqTypeSelect = document.getElementById('reqRequestType');
-    if (reqTypeSelect) reqTypeSelect.addEventListener('change', toggleOriginBranchVisibility);
-
-    // Guardar solicitud
-    const saveRequestBtn = document.getElementById('btnSaveRequest');
-    if (saveRequestBtn) {
-        saveRequestBtn.addEventListener('click', async () => {
+    // Guardar Solicitud
+    const btnEnviarSolicitud = document.getElementById('btnEnviarSolicitud');
+    if (btnEnviarSolicitud) {
+        btnEnviarSolicitud.addEventListener('click', async () => {
+            const reqType = document.getElementById('modalReqType').value;
             const payload = {
-                requestType: document.getElementById('reqRequestType').value,
-                originBranchId: document.getElementById('reqOriginBranch').value ? parseInt(document.getElementById('reqOriginBranch').value) : null,
-                destinationBranchId: parseInt(document.getElementById('reqDestinationBranch').value),
-                productId: parseInt(document.getElementById('reqProduct').value),
-                quantity: parseInt(document.getElementById('reqQuantity').value),
-                notes: document.getElementById('reqNotes').value
+                requestType: reqType,
+                originBranchId: reqType === 'TRANSFER' ? parseInt(document.getElementById('modalReqOriginBranch').value) : null,
+                destinationBranchId: parseInt(document.getElementById('modalReqDestBranch').value),
+                productId: parseInt(document.getElementById('modalReqProduct').value),
+                quantity: parseInt(document.getElementById('modalReqQuantity').value),
+                notes: document.getElementById('modalReqNotes').value
             };
 
             try {
                 const res = await authFetch(`${API_BASE}/requests`, {
                     method: 'POST',
                     body: JSON.stringify(payload)
-                });
-                const json = await res.json();
-                if (json.success) {
-                    showNotification('Solicitud creada exitosamente en estado PENDIENTE', 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('newRequestModal')).hide();
-                    refreshDashboardData();
+                }).then(r => r.json());
+
+                if (res.success) {
+                    alert('Solicitud enviada exitosamente en estado PENDIENTE.');
+                    bootstrap.Modal.getInstance(document.getElementById('modalNuevaSolicitud')).hide();
+                    loadAllData().then(() => switchView(currentActiveView));
                 } else {
-                    showNotification(json.message || 'Error al crear solicitud', 'danger');
+                    alert(res.message);
                 }
-            } catch (e) {
-                showNotification('Error al crear solicitud', 'danger');
+            } catch (err) {
+                alert('Error al enviar la solicitud.');
             }
         });
     }
 
-    // Guardar producto
-    const saveProductBtn = document.getElementById('btnSaveProduct');
-    if (saveProductBtn) {
-        saveProductBtn.addEventListener('click', async () => {
-            const prodId = document.getElementById('prodId').value;
+    // Guardar Producto
+    const btnGuardarProducto = document.getElementById('btnGuardarProducto');
+    if (btnGuardarProducto) {
+        btnGuardarProducto.addEventListener('click', async () => {
+            const editId = document.getElementById('prodEditId').value;
             const payload = {
-                sku: document.getElementById('prodSku').value.trim(),
-                name: document.getElementById('prodName').value.trim(),
-                description: document.getElementById('prodDescription').value.trim(),
-                category: document.getElementById('prodCategory').value.trim(),
-                price: parseFloat(document.getElementById('prodPrice').value),
-                unit: document.getElementById('prodUnit').value.trim(),
-                minStockThreshold: parseInt(document.getElementById('prodMinStock').value)
+                sku: document.getElementById('modalProdSku').value.trim(),
+                name: document.getElementById('modalProdName').value.trim(),
+                category: document.getElementById('modalProdCategory').value,
+                unit: document.getElementById('modalProdUnit').value,
+                minStockThreshold: parseInt(document.getElementById('modalProdMinStock').value),
+                price: parseFloat(document.getElementById('modalProdPrice').value)
             };
 
-            const url = prodId ? `${API_BASE}/products/${prodId}` : `${API_BASE}/products`;
-            const method = prodId ? 'PUT' : 'POST';
+            const url = editId ? `${API_BASE}/products/${editId}` : `${API_BASE}/products`;
+            const method = editId ? 'PUT' : 'POST';
 
-            try {
-                const res = await authFetch(url, {
-                    method: method,
-                    body: JSON.stringify(payload)
-                });
-                const json = await res.json();
-                if (json.success) {
-                    showNotification(prodId ? 'Producto actualizado' : 'Producto creado en el catálogo', 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
-                    loadProducts();
-                    loadInventory();
-                } else {
-                    showNotification(json.message || 'Error al guardar producto', 'danger');
-                }
-            } catch (e) {
-                showNotification('Error al procesar producto', 'danger');
+            const res = await authFetch(url, {
+                method,
+                body: JSON.stringify(payload)
+            }).then(r => r.json());
+
+            if (res.success) {
+                alert(editId ? 'Producto actualizado' : 'Producto creado exitosamente');
+                bootstrap.Modal.getInstance(document.getElementById('modalNuevoProducto')).hide();
+                loadAllData().then(() => switchView(currentActiveView));
+            } else {
+                alert(res.message);
             }
         });
     }
 
-    // Botón abrir modal nuevo producto
-    const btnNewProduct = document.getElementById('btnNewProduct');
-    if (btnNewProduct) {
-        btnNewProduct.addEventListener('click', () => {
-            document.getElementById('prodId').value = '';
-            document.getElementById('productForm').reset();
-            new bootstrap.Modal(document.getElementById('productModal')).show();
+    // Guardar Empleado (con definición directa de contraseña)
+    const btnGuardarEmpleado = document.getElementById('btnGuardarEmpleado');
+    if (btnGuardarEmpleado) {
+        btnGuardarEmpleado.addEventListener('click', async () => {
+            const editId = document.getElementById('empEditId').value;
+            const payload = {
+                id: editId ? parseInt(editId) : null,
+                fullName: document.getElementById('modalEmpFullName').value.trim(),
+                email: document.getElementById('modalEmpEmail').value.trim(),
+                username: document.getElementById('modalEmpUsername').value.trim(),
+                password: document.getElementById('modalEmpPassword').value.trim(),
+                branchId: document.getElementById('modalEmpBranch').value ? parseInt(document.getElementById('modalEmpBranch').value) : null,
+                role: document.getElementById('modalEmpRole').value,
+                position: document.getElementById('modalEmpPosition').value.trim(),
+                phone: document.getElementById('modalEmpPhone').value.trim(),
+                active: document.getElementById('modalEmpActive').checked
+            };
+
+            const url = editId ? `${API_BASE}/employees/${editId}` : `${API_BASE}/employees`;
+            const method = editId ? 'PUT' : 'POST';
+
+            const res = await authFetch(url, {
+                method,
+                body: JSON.stringify(payload)
+            }).then(r => r.json());
+
+            if (res.success) {
+                alert('Empleado guardado exitosamente con sus credenciales.');
+                bootstrap.Modal.getInstance(document.getElementById('modalNuevoEmpleado')).hide();
+                loadAllData().then(renderEmployeesView);
+            } else {
+                alert(res.message);
+            }
         });
     }
-
-    // Filtro de empleados por sucursal
-    const empFilter = document.getElementById('empFilterBranch');
-    if (empFilter) empFilter.addEventListener('change', loadEmployees);
-}
-
-function showNotification(message, type = 'info') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3 shadow`;
-    alertDiv.style.zIndex = 9999;
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    setTimeout(() => {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertDiv.remove(), 250);
-    }, 4000);
 }
