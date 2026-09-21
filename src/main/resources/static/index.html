@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGI - Sistema de Gestión de Inventario Multi-Sucursal</title>
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+    <!-- Barra de Navegación Superior -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3 shadow-sm">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="bi bi-box-seam-fill text-primary fs-3 me-2"></i>
+                <div>
+                    <span class="fw-bold">SGI Inventarios</span>
+                    <small class="d-block text-secondary text-uppercase" style="font-size: 0.68rem; letter-spacing: 1px;">16 Sucursales Nacionales</small>
+                </div>
+            </a>
+
+            <!-- Info del Usuario Logueado (Visible solo autenticado) -->
+            <div id="navUserInfo" class="d-none d-flex align-items-center ms-auto">
+                <div class="text-end me-3 text-white">
+                    <div id="navUserName" class="fw-bold fs-6">Usuario</div>
+                    <div class="d-flex align-items-center justify-content-end gap-1">
+                        <span id="navUserRole" class="badge bg-primary" style="font-size: 0.7rem;">ROL</span>
+                        <span id="navUserBranch" class="badge bg-secondary" style="font-size: 0.7rem;">SUCURSAL</span>
+                    </div>
+                </div>
+                <button id="btnLogout" class="btn btn-outline-light btn-sm" title="Cerrar Sesión">
+                    <i class="bi bi-box-arrow-right me-1"></i>Salir
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SECCIÓN 1: PANTALLA DE INICIO DE SESIÓN -->
+    <section id="loginSection" class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card p-4 shadow-lg">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-shield-lock-fill text-primary display-4"></i>
+                        <h4 class="fw-bold mt-2">Iniciar Sesión</h4>
+                        <p class="text-muted small">Autenticación segura basada en JSON Web Tokens (JWT)</p>
+                    </div>
+
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre de Usuario</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" id="loginUsername" class="form-control" placeholder="Ej. admin o gerente_cdmx" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Acceder al Sistema
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <!-- Credenciales Rápidas para Evaluación -->
+                    <div class="bg-light p-3 rounded">
+                        <h6 class="fw-bold text-dark mb-2 small"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Accesos de Demostración:</h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-dark quick-login-btn btn-quick-login" data-user="admin" data-pass="admin123">
+                                <strong>Administrador Corporativo</strong> (admin / admin123)<br>
+                                <small class="text-muted">Gestión global, aprobación traslados y CRUD trabajadores</small>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary quick-login-btn btn-quick-login" data-user="gerente_cdmx" data-pass="gerente123">
+                                <strong>Gerente Sucursal CDMX Norte</strong> (gerente_cdmx / gerente123)<br>
+                                <small class="text-muted">Tiene alertas visuales activas de stock bajo</small>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary quick-login-btn btn-quick-login" data-user="gerente_mty" data-pass="gerente123">
+                                <strong>Gerente Sucursal Monterrey Valle</strong> (gerente_mty / gerente123)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN 2: DASHBOARD PRINCIPAL -->
+    <main id="dashboardSection" class="container-fluid px-4 py-4 d-none">
+
+        <!-- Métricas Principales -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 metric-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Total Sucursales</span>
+                            <h3 class="fw-bold mb-0">16</h3>
+                        </div>
+                        <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+                            <i class="bi bi-geo-alt fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 metric-card success-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Unidades en Inventario</span>
+                            <h3 id="metricTotalInventory" class="fw-bold mb-0 text-success">0</h3>
+                        </div>
+                        <div class="bg-success-subtle text-success p-3 rounded-circle">
+                            <i class="bi bi-boxes fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 metric-card danger-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Alertas Stock Bajo</span>
+                            <h3 id="metricAlertsCount" class="fw-bold mb-0 text-danger">0</h3>
+                        </div>
+                        <div class="bg-danger-subtle text-danger p-3 rounded-circle">
+                            <i class="bi bi-bell-fill fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 metric-card warning-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Solicitudes Pendientes</span>
+                            <h3 id="metricPendingRequests" class="fw-bold mb-0 text-warning">0</h3>
+                        </div>
+                        <div class="bg-warning-subtle text-warning p-3 rounded-circle">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENEDOR DE ALERTAS VISUALES DE STOCK BAJO (REQUERIMIENTO PRINCIPAL) -->
+        <div id="visualAlertsContainer"></div>
+
+        <!-- Pestañas de Navegación del Módulo -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-3 px-4">
+                <ul class="nav nav-pills card-header-pills" id="mainTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabInventory" type="button">
+                            <i class="bi bi-table me-1"></i>Inventario por Sucursal
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabRequests" type="button">
+                            <i class="bi bi-arrow-left-right me-1"></i>Solicitudes de Mercancía
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabProducts" type="button">
+                            <i class="bi bi-box-seam me-1"></i>Catálogo de Productos
+                        </button>
+                    </li>
+                    <li class="nav-item admin-only">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabEmployees" type="button">
+                            <i class="bi bi-people me-1"></i>Gestión de Empleados (Admin)
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabSecurity" type="button">
+                            <i class="bi bi-shield-check me-1"></i>Seguridad & API
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body px-4 pb-4">
+                <div class="tab-content" id="mainTabsContent">
+
+                    <!-- PESTAÑA 1: INVENTARIO -->
+                    <div class="tab-pane fade show active" id="tabInventory" role="tabpanel">
+                        <div class="row align-items-center mb-3 g-2">
+                            <div class="col-md-5">
+                                <label class="form-label small fw-bold text-muted mb-1">Filtrar por Sucursal:</label>
+                                <select id="inventoryBranchSelect" class="form-select"></select>
+                            </div>
+                            <div class="col-md-7 text-md-end pt-3">
+                                <button class="btn btn-primary" onclick="openTransferModal(null, null)">
+                                    <i class="bi bi-plus-circle me-1"></i>Solicitar Mercancía
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="loadInventory(); loadLowStockAlerts();">
+                                    <i class="bi bi-arrow-clockwise"></i> Actualizar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sucursal</th>
+                                        <th>SKU</th>
+                                        <th>Producto</th>
+                                        <th>Categoría</th>
+                                        <th>Stock Actual</th>
+                                        <th>Stock Mínimo</th>
+                                        <th>Estado Alerta</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody">
+                                    <!-- Inyectado por app.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PESTAÑA 2: SOLICITUDES -->
+                    <div class="tab-pane fade" id="tabRequests" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0">Historial y Flujo de Solicitudes</h5>
+                            <button class="btn btn-primary" onclick="openTransferModal(null, null)">
+                                <i class="bi bi-plus-circle me-1"></i>Nueva Solicitud
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tipo</th>
+                                        <th>Sucursal Origen</th>
+                                        <th>Sucursal Destino</th>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Solicitante</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="requestsTableBody">
+                                    <!-- Inyectado por app.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PESTAÑA 3: PRODUCTOS -->
+                    <div class="tab-pane fade" id="tabProducts" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="fw-bold mb-0">Catálogo Centralizado de Productos</h5>
+                                <small class="text-muted">Total: <span id="metricTotalProducts">0</span> productos activos</small>
+                            </div>
+                            <button id="btnNewProduct" class="btn btn-primary">
+                                <i class="bi bi-plus-lg me-1"></i>Registrar Producto
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Nombre del Producto</th>
+                                        <th>Categoría</th>
+                                        <th>Precio</th>
+                                        <th>Unidad</th>
+                                        <th>Umbral Mínimo</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    <!-- Inyectado por app.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PESTAÑA 4: EMPLEADOS (SOLO ADMIN) -->
+                    <div class="tab-pane fade admin-only" id="tabEmployees" role="tabpanel">
+                        <div class="row align-items-center mb-3 g-2">
+                            <div class="col-md-5">
+                                <label class="form-label small fw-bold text-muted mb-1">Filtrar Empleados por Sucursal:</label>
+                                <select id="empFilterBranch" class="form-select"></select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Rol</th>
+                                        <th>Sucursal Asignada</th>
+                                        <th>Puesto</th>
+                                        <th>Correo</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeesTableBody">
+                                    <!-- Inyectado por app.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PESTAÑA 5: SEGURIDAD & API -->
+                    <div class="tab-pane fade" id="tabSecurity" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light p-3">
+                                    <h6 class="fw-bold text-primary"><i class="bi bi-shield-lock me-1"></i>Reglas de Seguridad y Control de Acceso (RBAC)</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>ROLE_ADMIN:</strong> Acceso completo a las 16 sucursales, aprobación/rechazo de solicitudes, CRUD de empleados y eliminación de productos.</li>
+                                        <li><strong>ROLE_GERENTE:</strong> Vista de inventario local y de las otras 15 sucursales, creación de solicitudes (requieren aprobación de Admin), y gestión de catálogo centralizado.</li>
+                                        <li><strong>Sin Token (401):</strong> Cualquier petición no autenticada es rechazada con código HTTP 401.</li>
+                                        <li><strong>Rol Insuficiente (403):</strong> Un gerente intentando acceder a endpoints de empleados o aprobando solicitudes recibe código HTTP 403.</li>
+                                        <li><strong>Firma JWT:</strong> Algoritmo HMAC-SHA256 con llave secreta inyectada exclusivamente desde la variable de entorno <code>JWT_SECRET</code>.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light p-3">
+                                    <h6 class="fw-bold text-success"><i class="bi bi-cpu me-1"></i>Auditoría & Calidad de Código</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>JUnit 5 + JaCoCo:</strong> Cobertura mínima automatizada de pruebas del 80% sobre clases de servicio y controladores.</li>
+                                        <li><strong>SonarQube:</strong> Análisis estático continuo de Bugs, Vulnerabilidades, Hotspots, Code Smells y Deuda Técnica.</li>
+                                        <li><strong>OWASP ZAP:</strong> DAST activo y pasivo con cabeceras de seguridad HTTP configuradas en <code>SecurityConfig</code> (CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff).</li>
+                                        <li><strong>Pipeline CI/CD:</strong> GitHub Actions con etapas automatizadas de Test, Build y Deploy.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL: NUEVA SOLICITUD (TRASLADO O PROVEEDOR) -->
+    <div class="modal fade" id="newRequestModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right me-2 text-primary"></i>Solicitud de Mercancía</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="newRequestForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tipo de Solicitud</label>
+                            <select id="reqRequestType" class="form-select">
+                                <option value="TRANSFER">Traslado entre Sucursales</option>
+                                <option value="SUPPLIER">Pedido Directo a Proveedor</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="originBranchGroup">
+                            <label class="form-label fw-semibold">Sucursal de Origen (Quien envía la mercancía)</label>
+                            <select id="reqOriginBranch" class="form-select"></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sucursal de Destino (Quien recibe la mercancía)</label>
+                            <select id="reqDestinationBranch" class="form-select" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Producto</label>
+                            <select id="reqProduct" class="form-select" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Cantidad Solicitada</label>
+                            <input type="number" id="reqQuantity" class="form-control" min="1" value="10" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Justificación / Notas</label>
+                            <textarea id="reqNotes" class="form-control" rows="2" placeholder="Motivo de la solicitud (ej. Stock crítico en tienda)"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnSaveRequest" class="btn btn-primary">Crear Solicitud</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REGISTRAR / EDITAR PRODUCTO -->
+    <div class="modal fade" id="productModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-box-seam me-2 text-primary"></i>Producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="productForm">
+                        <input type="hidden" id="prodId">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">SKU / Código Único</label>
+                            <input type="text" id="prodSku" class="form-control" placeholder="Ej. PROD-ABC-123" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre del Producto</label>
+                            <input type="text" id="prodName" class="form-control" placeholder="Nombre completo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Descripción</label>
+                            <input type="text" id="prodDescription" class="form-control" placeholder="Descripción breve">
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Categoría</label>
+                                <input type="text" id="prodCategory" class="form-control" placeholder="Ej. Electrónica" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Precio Unitario ($ MXN)</label>
+                                <input type="number" id="prodPrice" class="form-control" step="0.01" min="0.1" value="100.00" required>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Unidad de Medida</label>
+                                <input type="text" id="prodUnit" class="form-control" value="Pza" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Umbral Mínimo Stock</label>
+                                <input type="number" id="prodMinStock" class="form-control" min="1" value="10" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnSaveProduct" class="btn btn-primary">Guardar Producto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- App Logic -->
+    <script src="/js/app.js"></script>
+</body>
+</html>

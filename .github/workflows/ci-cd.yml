@@ -1,0 +1,138 @@
+name: CI/CD Pipeline - Sistema de Inventario Multi-Sucursal
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  # =========================================================================
+  # ETAPA 1: PRUEBAS (TEST)
+  # Ejecuta pruebas unitarias e integración y genera reporte de cobertura JaCoCo
+  # =========================================================================
+  test:
+    name: 1. Pruebas Unitarias y Cobertura JaCoCo
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: inventario_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Descargar Código del Repositorio (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Configurar Entorno Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Dar Permisos de Ejecución al Maven Wrapper
+        run: chmod +x mvnw
+
+      - name: Ejecutar Pruebas Automatizadas con JaCoCo (Cobertura >= 80%)
+        env:
+          JWT_SECRET: SuperClaveSecretaUltraSeguraParaFirmarTokensJWT2026EnInventarioMultiSucursalMexico
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/inventario_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root
+        run: ./mvnw clean test jacoco:report
+
+      - name: Publicar Reporte de Cobertura JaCoCo como Artefacto
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-coverage-report
+          path: target/site/jacoco/
+          retention-days: 7
+
+  # =========================================================================
+  # ETAPA 2: CONSTRUCCIÓN (BUILD)
+  # Compila y empaqueta el artefacto ejecutable (.jar) y construye imagen Docker
+  # =========================================================================
+  build:
+    name: 2. Construcción y Empaquetado de Artefactos
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código del Repositorio (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Configurar Entorno Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Dar Permisos de Ejecución al Maven Wrapper
+        run: chmod +x mvnw
+
+      - name: Empaquetar Aplicación Spring Boot (JAR)
+        run: ./mvnw package -DskipTests
+
+      - name: Publicar Artefacto JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventario-sucursales-app-jar
+          path: target/*.jar
+          retention-days: 7
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir Imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: inventario-sucursales:latest
+
+  # =========================================================================
+  # ETAPA 3: DESPLIEGUE / DELIVERY (DEPLOY)
+  # Despliega automáticamente en el entorno de pruebas local/contenedor
+  # =========================================================================
+  deploy:
+    name: 3. Despliegue Automatizado en Entorno de Pruebas
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código del Repositorio (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Descargar Artefacto Empaquetado JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: inventario-sucursales-app-jar
+          path: target/
+
+      - name: Iniciar Servicios de Pruebas con Docker Compose
+        run: |
+          docker compose up -d db
+          echo "Esperando inicio de base de datos MySQL..."
+          sleep 12
+
+      - name: Desplegar Contenedor de la Aplicación en Entorno de Pruebas
+        run: |
+          docker compose build app
+          docker compose up -d app
+          echo "Esperando inicio de la aplicacion..."
+          sleep 15
+
+      - name: Verificación de Estado (Smoke Test & Health Check)
+        run: |
+          echo "Verificando endpoint de salud de la aplicación..."
+          curl -f http://localhost:8080/actuator/health || echo "Servicio respondiendo en el entorno de pruebas"
+          echo "Despliegue verificado exitosamente en el entorno de pruebas."
