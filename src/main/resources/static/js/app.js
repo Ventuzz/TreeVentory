@@ -434,7 +434,7 @@ function renderAdminBranchBars() {
 function renderAdminCriticalAlerts(criticals) {
     const container = document.getElementById('dashboardPanelRightContent');
     if (criticals.length === 0) {
-        container.innerHTML = `<div class="text-muted small py-4 text-center">No hay productos en estado crítico.</div>`;
+        container.innerHTML = `<div class="text-secondary small py-4 text-center">No hay productos en estado crítico.</div>`;
         return;
     }
 
@@ -446,7 +446,7 @@ function renderAdminCriticalAlerts(criticals) {
                     <div class="fw-semibold text-white small">
                         <span class="status-dot status-dot-red"></span>${c.productName}
                     </div>
-                    <div class="text-muted" style="font-size: 0.72rem; padding-left: 1rem;">
+                    <div class="text-secondary" style="font-size: 0.75rem; padding-left: 1rem;">
                         ${c.branchName} · ${c.currentStock}/${c.minStockThreshold} mín.
                     </div>
                 </div>
@@ -463,7 +463,7 @@ function renderAdminCriticalAlerts(criticals) {
 function renderManagerDashboardLowStock(myAlerts) {
     const container = document.getElementById('dashboardPanelLeftContent');
     if (myAlerts.length === 0) {
-        container.innerHTML = `<div class="text-muted small py-4 text-center">Inventario óptimo. No hay stock bajo.</div>`;
+        container.innerHTML = `<div class="text-secondary small py-4 text-center">Inventario óptimo. No hay stock bajo.</div>`;
         return;
     }
 
@@ -492,7 +492,7 @@ function renderManagerDashboardLowStock(myAlerts) {
             <tr>
                 <td>
                     <div class="fw-semibold text-white">${a.productName}</div>
-                    <div class="text-muted" style="font-size: 0.72rem;">${a.productSku}</div>
+                    <div class="text-secondary" style="font-size: 0.75rem; font-weight: 500;">${a.productSku}</div>
                 </td>
                 <td class="fw-bold ${isSinStock ? 'text-danger' : 'text-warning'}">${a.currentStock}</td>
                 <td>${a.minStockThreshold}</td>
@@ -513,7 +513,7 @@ function renderManagerDashboardLowStock(myAlerts) {
 function renderManagerDashboardRecentReqs(myReqs) {
     const container = document.getElementById('dashboardPanelRightContent');
     if (myReqs.length === 0) {
-        container.innerHTML = `<div class="text-muted small py-4 text-center">No hay solicitudes registradas para esta sucursal.</div>`;
+        container.innerHTML = `<div class="text-secondary small py-4 text-center">No hay solicitudes registradas para esta sucursal.</div>`;
         return;
     }
 
@@ -528,7 +528,7 @@ function renderManagerDashboardRecentReqs(myReqs) {
             <div class="p-2 rounded card-dark border-0 d-flex justify-content-between align-items-center">
                 <div>
                     <div class="fw-semibold text-white small">${r.product.name}</div>
-                    <div class="text-muted" style="font-size: 0.7rem;">Cant: ${r.quantity} · ${typeBadge}</div>
+                    <div class="text-secondary" style="font-size: 0.75rem;">Cant: ${r.quantity} · ${typeBadge}</div>
                 </div>
                 <div>${statusBadge}</div>
             </div>
@@ -634,7 +634,7 @@ function renderAdminMatrix() {
                         </div>
                         <span class="fw-bold ${numColor} small">${qty}</span>
                     </div>
-                    <a href="javascript:void(0)" class="small text-muted" style="font-size: 0.68rem;" onclick="quickEditStockAdmin(${b.id}, ${p.id}, ${qty}, '${p.name}')">editar</a>
+                    <a href="javascript:void(0)" class="quick-stock-edit-btn" onclick="openEditStockModal(${b.id}, ${p.id}, ${qty}, '${p.name.replace(/'/g, "\\'")}', '${b.name.replace(/'/g, "\\'")}')">editar</a>
                 </td>
             `;
         });
@@ -644,25 +644,33 @@ function renderAdminMatrix() {
     });
 }
 
-function quickEditStockAdmin(branchId, productId, currentQty, prodName) {
-    const newQtyStr = prompt(`Ajustar existencias para ${prodName}.\nCantidad actual: ${currentQty}.\nNueva cantidad:`, currentQty);
-    if (newQtyStr === null) return;
-    const newQty = parseInt(newQtyStr, 10);
-    if (isNaN(newQty) || newQty < 0) {
-        alert('Ingrese una cantidad válida mayor o igual a 0');
-        return;
-    }
+let stockModalInstance = null;
+function openEditStockModal(branchId, productId, currentQty, prodName, branchName) {
+    document.getElementById('adjustStockBranchId').value = branchId;
+    document.getElementById('adjustStockProductId').value = productId;
+    document.getElementById('adjustStockBranchName').value = branchName || `Sucursal #${branchId}`;
+    document.getElementById('adjustStockProductName').value = prodName;
+    document.getElementById('adjustStockCurrentQty').value = currentQty;
+    document.getElementById('adjustStockNewQty').value = currentQty;
 
-    authFetch(`${API_BASE}/inventory/branch/${branchId}/product/${productId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ quantity: newQty })
-    }).then(r => r.json()).then(res => {
-        if (res.success) {
-            loadAllData().then(renderAdminMatrix);
-        } else {
-            alert(res.message);
+    const modalEl = document.getElementById('modalAjustarStock');
+    if (!stockModalInstance && window.bootstrap) {
+        stockModalInstance = new bootstrap.Modal(modalEl);
+    }
+    if (stockModalInstance) {
+        stockModalInstance.show();
+    }
+    setTimeout(() => {
+        const input = document.getElementById('adjustStockNewQty');
+        if (input) {
+            input.focus();
+            input.select();
         }
-    });
+    }, 300);
+}
+
+function quickEditStockAdmin(branchId, productId, currentQty, prodName, branchName) {
+    openEditStockModal(branchId, productId, currentQty, prodName, branchName);
 }
 
 // -------------------------------------------------------------
@@ -756,7 +764,7 @@ function renderManagerInventoryTable() {
         const pct = Math.min(100, Math.round((item.quantity / (item.min * 3)) * 100));
 
         // Requerimiento clave del usuario: Botón de acción rápida si el estado es bajo o crítico
-        let actionBtn = `<span class="text-muted small">-</span>`;
+        let actionBtn = `<span class="text-secondary small">-</span>`;
         if (isUrgent || isLow) {
             actionBtn = `
                 <button class="btn btn-sm btn-pill-red py-1 px-2" style="font-size: 0.75rem;" onclick="openNewRequestModal(${p.id}, 'SUPPLIER')">
@@ -778,11 +786,11 @@ function renderManagerInventoryTable() {
                 <div class="stock-bar-container">
                     <div class="stock-bar-fill ${barClass}" style="width: ${pct}%;"></div>
                 </div>
-                <span class="small text-muted">${item.quantity}</span>
+                <span class="small text-secondary fw-semibold">${item.quantity}</span>
             </td>
             <td>${item.min}</td>
             <td>$${p.price.toFixed(2)}</td>
-            <td class="text-muted small">2026-09-20</td>
+            <td class="small text-secondary">2026-09-20</td>
             <td><span class="badge-status ${badgeClass}">${item.estado}</span></td>
             <td class="text-end">${actionBtn}</td>
         `;
@@ -809,7 +817,7 @@ function renderOtherBranchesView() {
         col.innerHTML = `
             <div class="card-dark p-3 cursor-pointer h-100" onclick="selectOtherBranch(${b.id})" style="cursor: pointer;">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="small text-muted fw-bold">${b.name}</span>
+                    <span class="small text-light fw-bold">${b.name}</span>
                 </div>
                 <div class="d-flex justify-content-between align-items-baseline">
                     <h5 class="fw-bold text-white mb-0">${totalUnits}</h5>
@@ -883,11 +891,11 @@ function onOtherBranchChange() {
                 <div class="stock-bar-container">
                     <div class="stock-bar-fill ${barClass}" style="width: ${pct}%;"></div>
                 </div>
-                <span class="small text-muted">${qty}</span>
+                <span class="small text-secondary fw-semibold">${qty}</span>
             </td>
             <td>${min}</td>
             <td><span class="badge-status ${badgeClass}">${estado}</span></td>
-            <td class="small text-muted">2026-09-20</td>
+            <td class="small text-secondary">2026-09-20</td>
         `;
         tbody.appendChild(tr);
     });
@@ -959,7 +967,7 @@ function renderRequestsView() {
         const originText = req.originBranch ? req.originBranch.name : 'TechMex Distribuidora';
         const destText = req.destinationBranch ? req.destinationBranch.name : 'CDMX Centro';
 
-        let actionsHtml = `<span class="text-muted small">-</span>`;
+        let actionsHtml = `<span class="text-secondary small">-</span>`;
         if (isAdmin && req.status === 'PENDING') {
             actionsHtml = `
                 <button class="btn btn-sm btn-outline-success me-1 py-0 px-2" title="Aprobar solicitud" onclick="approveRequest(${req.id})">✓</button>
@@ -975,8 +983,8 @@ function renderRequestsView() {
             <td>${originText}</td>
             <td>${destText}</td>
             <td class="fw-bold">${req.quantity}</td>
-            <td class="small text-muted">${req.requester.fullName}</td>
-            <td class="small text-muted">${req.createdAt ? req.createdAt.substring(0, 10) : '2026-09-20'}</td>
+            <td class="small text-secondary">${req.requester.fullName}</td>
+            <td class="small text-secondary">${req.createdAt ? req.createdAt.substring(0, 10) : '2026-09-20'}</td>
             <td>${statusBadge}</td>
             <td class="text-end">${actionsHtml}</td>
         `;
@@ -1029,7 +1037,7 @@ function renderEmployeesView() {
         col.className = 'col-md-3 col-sm-4';
         col.innerHTML = `
             <div class="card-dark p-2 text-center">
-                <div class="small text-muted text-truncate">${b.name}</div>
+                <div class="small text-secondary fw-semibold text-truncate">${b.name}</div>
                 <div class="fw-bold text-white fs-5">${emps.length || 2}</div>
             </div>
         `;
@@ -1082,8 +1090,8 @@ function renderEmployeesTable() {
             <td>${emp.position || 'Empleado'}</td>
             <td>${roleBadge}</td>
             <td>${emp.branch ? emp.branch.name : 'Corporativo'}</td>
-            <td class="small text-muted">${emp.phone || '55-0000-0000'}</td>
-            <td class="small text-muted">2026-09-20</td>
+            <td class="small text-secondary">${emp.phone || '55-0000-0000'}</td>
+            <td class="small text-secondary">2026-09-20</td>
             <td>${statusBadge}</td>
             <td class="text-end">
                 <button class="btn-action-icon" onclick="openEditEmployeeModal(${emp.id})"><i class="bi bi-pencil"></i></button>
@@ -1295,6 +1303,38 @@ function setupEventListeners() {
                 loadAllData().then(renderEmployeesView);
             } else {
                 alert(res.message);
+            }
+        });
+    }
+
+    // Guardar Ajuste de Existencias / Inventario
+    const btnGuardarAjusteStock = document.getElementById('btnGuardarAjusteStock');
+    if (btnGuardarAjusteStock) {
+        btnGuardarAjusteStock.addEventListener('click', async () => {
+            const branchId = document.getElementById('adjustStockBranchId').value;
+            const productId = document.getElementById('adjustStockProductId').value;
+            const newQty = parseInt(document.getElementById('adjustStockNewQty').value, 10);
+
+            if (isNaN(newQty) || newQty < 0) {
+                alert('Ingrese una cantidad válida mayor o igual a 0');
+                return;
+            }
+
+            try {
+                const res = await authFetch(`${API_BASE}/inventory/branch/${branchId}/product/${productId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ quantity: newQty })
+                }).then(r => r.json());
+
+                if (res.success) {
+                    if (stockModalInstance) stockModalInstance.hide();
+                    await loadAllData();
+                    renderAdminMatrix();
+                } else {
+                    alert(res.message || 'Error al actualizar existencias.');
+                }
+            } catch (err) {
+                alert('Error al comunicarse con el servidor.');
             }
         });
     }

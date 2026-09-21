@@ -23,21 +23,21 @@
                     <i class="bi bi-diagram-3-fill fs-4"></i>
                 </div>
                 <h3 class="fw-bold text-white mb-1">Treeventory</h3>
-                <p class="text-muted small">Plataforma de Control de Inventario Multi-Sucursal</p>
+                <p class="text-secondary small">Plataforma de Control de Inventario Multi-Sucursal</p>
             </div>
 
             <form id="loginForm">
                 <div class="mb-3">
-                    <label class="form-label small fw-bold text-secondary">Nombre de Usuario o Email</label>
+                    <label class="form-label small fw-bold text-light">Nombre de Usuario o Email</label>
                     <div class="input-group">
-                        <span class="input-group-text input-dark border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                        <span class="input-group-text input-dark border-end-0 text-secondary"><i class="bi bi-person"></i></span>
                         <input type="text" id="loginUsername" class="form-control input-dark border-start-0" placeholder="usuario@corp.mx" required autofocus>
                     </div>
                 </div>
                 <div class="mb-4">
-                    <label class="form-label small fw-bold text-secondary">Contraseña</label>
+                    <label class="form-label small fw-bold text-light">Contraseña</label>
                     <div class="input-group">
-                        <span class="input-group-text input-dark border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                        <span class="input-group-text input-dark border-end-0 text-secondary"><i class="bi bi-lock"></i></span>
                         <input type="password" id="loginPassword" class="form-control input-dark border-start-0" placeholder="••••••••" required>
                     </div>
                 </div>
@@ -160,7 +160,7 @@
                             <div id="branchBannerAddress" class="active-branch-address">Av. Juárez 123, Centro Histórico</div>
                         </div>
                         <div class="text-end">
-                            <div class="small text-muted mb-1">Teléfono</div>
+                            <div class="small text-secondary mb-1">Teléfono</div>
                             <div id="branchBannerPhone" class="active-branch-phone">55-1001-0001</div>
                         </div>
                     </div>
@@ -238,7 +238,7 @@
                             <div class="card-dark p-4 h-100">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 id="dashboardPanelLeftTitle" class="fw-bold text-white mb-0">Inventario por sucursal</h6>
-                                    <span id="dashboardPanelLeftTag" class="small text-muted">unidades totales</span>
+                                    <span id="dashboardPanelLeftTag" class="small text-secondary fw-semibold">unidades totales</span>
                                 </div>
                                 <div id="dashboardPanelLeftContent">
                                     <!-- Generado dinámicamente -->
@@ -264,7 +264,7 @@
                     <div class="card-dark p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold text-white mb-0">Solicitudes recientes</h6>
-                            <span id="recentRequestsCountBadge" class="small text-muted">10 total</span>
+                            <span id="recentRequestsCountBadge" class="small text-secondary fw-semibold">10 total</span>
                         </div>
                         <div class="table-responsive">
                             <table class="table-dark-custom">
@@ -294,7 +294,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h4 class="fw-bold text-white mb-1">Inventario</h4>
-                            <div class="small text-muted">20 productos · 16 sucursales</div>
+                            <div class="small text-secondary">20 productos · 16 sucursales</div>
                         </div>
                         <button class="btn btn-primary-blue" onclick="openNewProductModal()">
                             <i class="bi bi-plus-lg"></i> Nuevo producto
@@ -335,7 +335,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h4 id="miInventarioTitle" class="fw-bold text-white mb-1">Mi Inventario — CDMX Centro</h4>
-                            <div class="small text-muted">Stock actual de tu sucursal con indicadores de nivel</div>
+                            <div class="small text-secondary">Stock actual de tu sucursal con indicadores de nivel</div>
                         </div>
                     </div>
 
@@ -393,26 +393,26 @@
                 <div id="viewOtrasSucursales" class="view-panel d-none">
                     <div class="mb-3">
                         <h4 class="fw-bold text-white mb-1">Consultar otras sucursales</h4>
-                        <div class="small text-muted">Consulta el inventario de cualquier sucursal (solo lectura)</div>
+                        <div class="small text-secondary">Consulta el inventario de cualquier sucursal (solo lectura)</div>
                     </div>
 
                     <!-- Selector de Sucursal y Datos de Contacto -->
                     <div class="card-dark p-3 mb-3">
                         <div class="row g-3 align-items-center">
                             <div class="col-md-5">
-                                <label class="small text-muted fw-bold mb-1">SUCURSAL A CONSULTAR</label>
+                                <label class="small text-light fw-bold mb-1">SUCURSAL A CONSULTAR</label>
                                 <select id="otherBranchSelect" class="form-select input-dark" onchange="onOtherBranchChange()"></select>
                             </div>
                             <div class="col-md-3">
-                                <div class="small text-muted">Dirección</div>
+                                <div class="small text-secondary">Dirección</div>
                                 <div id="otherBranchDir" class="text-white small fw-semibold text-truncate">-</div>
                             </div>
                             <div class="col-md-2">
-                                <div class="small text-muted">Teléfono</div>
+                                <div class="small text-secondary">Teléfono</div>
                                 <div id="otherBranchTel" class="text-white small fw-semibold">-</div>
                             </div>
                             <div class="col-md-2 text-md-end">
-                                <div class="small text-muted">Total Unidades / Alertas</div>
+                                <div class="small text-secondary">Total Unidades / Alertas</div>
                                 <div class="fw-bold text-white"><span id="otherBranchUnits">0</span> / <span id="otherBranchAlerts" class="text-warning">0</span></div>
                             </div>
                         </div>
@@ -457,7 +457,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h4 id="requestsHeaderTitle" class="fw-bold text-white mb-1">Solicitudes</h4>
-                            <div id="requestsHeaderSubtitle" class="small text-muted">5 solicitudes pendientes</div>
+                            <div id="requestsHeaderSubtitle" class="small text-secondary">5 solicitudes pendientes</div>
                         </div>
                         <button class="btn btn-primary-blue" onclick="openNewRequestModal()">
                             <i class="bi bi-plus-lg"></i> Nueva solicitud
@@ -519,7 +519,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h4 class="fw-bold text-white mb-1">Empleados</h4>
-                            <div class="small text-muted" id="employeesCountSubtitle">36 resultados</div>
+                            <div class="small text-secondary" id="employeesCountSubtitle">36 resultados</div>
                         </div>
                         <button class="btn btn-primary-blue" onclick="openNewEmployeeModal()">
                             <i class="bi bi-plus-lg"></i> Nuevo empleado
@@ -598,11 +598,11 @@
                         <input type="hidden" id="prodEditId">
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">SKU</label>
+                                <label class="form-label small fw-bold text-light">SKU</label>
                                 <input type="text" id="modalProdSku" class="form-control input-dark" placeholder="ELC-001" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">CATEGORÍA</label>
+                                <label class="form-label small fw-bold text-light">CATEGORÍA</label>
                                 <select id="modalProdCategory" class="form-select input-dark" required>
                                     <option value="Electrónicos">Electrónicos</option>
                                     <option value="Accesorios">Accesorios</option>
@@ -614,12 +614,12 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">NOMBRE DEL PRODUCTO</label>
+                            <label class="form-label small fw-bold text-light">NOMBRE DEL PRODUCTO</label>
                             <input type="text" id="modalProdName" class="form-control input-dark" placeholder="Nombre completo" required>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">UNIDAD</label>
+                                <label class="form-label small fw-bold text-light">UNIDAD</label>
                                 <select id="modalProdUnit" class="form-select input-dark">
                                     <option value="pza">pza</option>
                                     <option value="kg">kg</option>
@@ -628,18 +628,18 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">STOCK MÍNIMO</label>
+                                <label class="form-label small fw-bold text-light">STOCK MÍNIMO</label>
                                 <input type="number" id="modalProdMinStock" class="form-control input-dark" min="1" value="10" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">PRECIO ($)</label>
+                                <label class="form-label small fw-bold text-light">PRECIO ($)</label>
                                 <input type="number" id="modalProdPrice" class="form-control input-dark" step="0.01" min="0" value="0" required>
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer modal-footer-dark">
-                    <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" id="btnGuardarProducto" class="btn btn-primary-blue">Agregar producto</button>
                 </div>
             </div>
@@ -659,32 +659,32 @@
                         <input type="hidden" id="empEditId">
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">NOMBRE COMPLETO</label>
+                                <label class="form-label small fw-bold text-light">NOMBRE COMPLETO</label>
                                 <input type="text" id="modalEmpFullName" class="form-control input-dark" placeholder="Nombre Apellido" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">EMAIL</label>
+                                <label class="form-label small fw-bold text-light">EMAIL</label>
                                 <input type="email" id="modalEmpEmail" class="form-control input-dark" placeholder="nombre@corp.mx" required>
                             </div>
                         </div>
                         <!-- Campo Solicitado: Definir contraseña al crear empleado -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">USUARIO DE ACCESO</label>
+                                <label class="form-label small fw-bold text-light">USUARIO DE ACCESO</label>
                                 <input type="text" id="modalEmpUsername" class="form-control input-dark" placeholder="nombre.apellido" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">CONTRASEÑA</label>
+                                <label class="form-label small fw-bold text-light">CONTRASEÑA</label>
                                 <input type="password" id="modalEmpPassword" class="form-control input-dark" placeholder="Contraseña de acceso" required>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">SUCURSAL</label>
+                                <label class="form-label small fw-bold text-light">SUCURSAL</label>
                                 <select id="modalEmpBranch" class="form-select input-dark" required></select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">ROL</label>
+                                <label class="form-label small fw-bold text-light">ROL</label>
                                 <select id="modalEmpRole" class="form-select input-dark" required>
                                     <option value="ROLE_GERENTE">Empleado / Gerente</option>
                                     <option value="ROLE_ADMIN">Administrador</option>
@@ -693,11 +693,11 @@
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">PUESTO</label>
+                                <label class="form-label small fw-bold text-light">PUESTO</label>
                                 <input type="text" id="modalEmpPosition" class="form-control input-dark" placeholder="Ej. Encargado de Almacén">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">TELÉFONO</label>
+                                <label class="form-label small fw-bold text-light">TELÉFONO</label>
                                 <input type="text" id="modalEmpPhone" class="form-control input-dark" placeholder="55-0000-0000">
                             </div>
                         </div>
@@ -708,7 +708,7 @@
                     </form>
                 </div>
                 <div class="modal-footer modal-footer-dark">
-                    <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" id="btnGuardarEmpleado" class="btn btn-primary-blue">Agregar empleado</button>
                 </div>
             </div>
@@ -751,7 +751,7 @@
 
                         <!-- Campo para Proveedor (visible si es SUPPLIER) -->
                         <div id="fieldSupplierGroup" class="mb-3">
-                            <label class="form-label small fw-bold text-muted">PROVEEDOR</label>
+                            <label class="form-label small fw-bold text-light">PROVEEDOR</label>
                             <select id="modalReqSupplierName" class="form-select input-dark">
                                 <option value="TechMex Distribuidora">TechMex Distribuidora</option>
                                 <option value="Global Electronics MX">Global Electronics MX</option>
@@ -762,38 +762,83 @@
 
                         <!-- Campo para Sucursal Origen (visible si es TRANSFER) -->
                         <div id="fieldTransferOriginGroup" class="mb-3 d-none">
-                            <label class="form-label small fw-bold text-muted">SUCURSAL ORIGEN</label>
+                            <label class="form-label small fw-bold text-light">SUCURSAL ORIGEN</label>
                             <select id="modalReqOriginBranch" class="form-select input-dark"></select>
                         </div>
 
                         <!-- Sucursal Destino -->
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">SUCURSAL DESTINO</label>
+                            <label class="form-label small fw-bold text-light">SUCURSAL DESTINO</label>
                             <select id="modalReqDestBranch" class="form-select input-dark" required></select>
                         </div>
 
                         <!-- Producto -->
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">PRODUCTO SOLICITADO</label>
+                            <label class="form-label small fw-bold text-light">PRODUCTO SOLICITADO</label>
                             <select id="modalReqProduct" class="form-select input-dark" required></select>
                         </div>
 
                         <!-- Cantidad -->
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">CANTIDAD</label>
+                            <label class="form-label small fw-bold text-light">CANTIDAD</label>
                             <input type="number" id="modalReqQuantity" class="form-control input-dark" min="1" value="1" required>
                         </div>
 
                         <!-- Motivo o Notas -->
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">MOTIVO O NOTAS ADICIONALES</label>
+                            <label class="form-label small fw-bold text-light">MOTIVO O NOTAS ADICIONALES</label>
                             <textarea id="modalReqNotes" class="form-control input-dark" rows="3" placeholder="Explica el motivo de la solicitud (opcional pero recomendado)..."></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer modal-footer-dark">
-                    <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" id="btnEnviarSolicitud" class="btn btn-primary-blue">Enviar solicitud</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: AJUSTAR INVENTARIO / EXISTENCIAS -->
+    <div class="modal fade" id="modalAjustarStock" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-dark">
+                <div class="modal-header modal-header-dark">
+                    <h5 class="modal-title fw-bold text-white">
+                        <i class="bi bi-sliders me-2 text-primary"></i>Ajustar existencias de inventario
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-dark">
+                    <form id="formAjustarStock">
+                        <input type="hidden" id="adjustStockBranchId">
+                        <input type="hidden" id="adjustStockProductId">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-light">SUCURSAL</label>
+                            <input type="text" id="adjustStockBranchName" class="form-control input-dark" readonly disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-light">PRODUCTO</label>
+                            <input type="text" id="adjustStockProductName" class="form-control input-dark" readonly disabled>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-light">EXISTENCIA ACTUAL</label>
+                                <input type="number" id="adjustStockCurrentQty" class="form-control input-dark text-secondary" readonly disabled>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-light">NUEVA CANTIDAD</label>
+                                <input type="number" id="adjustStockNewQty" class="form-control input-dark fw-bold text-warning" min="0" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-dark">
+                    <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnGuardarAjusteStock" class="btn btn-primary-blue">Guardar existencias</button>
                 </div>
             </div>
         </div>

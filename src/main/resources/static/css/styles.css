@@ -8,8 +8,8 @@
     --border-card: #1e2b44;
     --border-light: #2a3b5c;
     --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
     --accent-blue: #3b82f6;
     --accent-blue-hover: #2563eb;
     --accent-indigo: #6366f1;
@@ -115,10 +115,10 @@ body {
     padding: 0 0.5rem 1.25rem 0.5rem;
 }
 .role-title {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     letter-spacing: 1px;
     margin-bottom: 0.4rem;
 }
@@ -230,8 +230,8 @@ body {
     text-overflow: ellipsis;
 }
 .user-meta-email {
-    font-size: 0.7rem;
-    color: var(--text-muted);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -239,7 +239,7 @@ body {
 .btn-logout {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 1.1rem;
     cursor: pointer;
     padding: 0.2rem;
@@ -322,19 +322,19 @@ body {
     margin: 0 0 0.2rem 0;
 }
 .active-branch-address {
-    font-size: 0.82rem;
-    color: var(--text-muted);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
 }
 .active-branch-phone {
-    font-size: 0.88rem;
-    color: var(--text-secondary);
+    font-size: 0.9rem;
+    color: #ffffff;
     font-weight: 600;
 }
 
 /* Alert Banners */
 .alert-banner-danger {
-    background-color: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
     border-radius: 12px;
     padding: 1rem 1.4rem;
     display: flex;
@@ -343,15 +343,15 @@ body {
     margin-bottom: 1.25rem;
 }
 .alert-banner-warning {
-    background-color: rgba(245, 158, 11, 0.12);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    background-color: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
     border-radius: 12px;
     padding: 0.85rem 1.25rem;
     display: flex;
     align-items: center;
     margin-bottom: 1.25rem;
     font-size: 0.88rem;
-    color: #fbbf24;
+    color: #fde047;
 }
 
 /* KPI Metric Cards */
@@ -366,23 +366,23 @@ body {
     height: 100%;
 }
 .kpi-title {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    color: var(--text-muted);
-    letter-spacing: 0.5px;
+    color: var(--text-secondary) !important;
+    letter-spacing: 0.6px;
     margin-bottom: 0.4rem;
 }
 .kpi-value {
-    font-size: 1.8rem;
+    font-size: 1.85rem;
     font-weight: 700;
     color: #ffffff;
     margin: 0 0 0.2rem 0;
     line-height: 1.1;
 }
 .kpi-subtext {
-    font-size: 0.78rem;
-    color: var(--text-muted);
+    font-size: 0.8rem;
+    color: var(--text-muted) !important;
 }
 .kpi-icon-box {
     width: 44px;
@@ -414,53 +414,53 @@ body {
    BADGES Y ESTILOS DE ESTADO (SEMÁFORO)
    ========================================================================== */
 .badge-status {
-    padding: 0.3rem 0.65rem;
+    padding: 0.35rem 0.7rem;
     border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.76rem;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
 }
 .badge-sin-stock, .badge-critico {
-    background-color: rgba(239, 68, 68, 0.18);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.35);
+    background-color: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.5);
 }
 .badge-bajo {
-    background-color: rgba(245, 158, 11, 0.18);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.35);
+    background-color: rgba(245, 158, 11, 0.22);
+    color: #fde047;
+    border: 1px solid rgba(245, 158, 11, 0.5);
 }
 .badge-normal, .badge-aprobada, .badge-activo {
-    background-color: rgba(16, 185, 129, 0.18);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.35);
+    background-color: rgba(16, 185, 129, 0.22);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.5);
 }
 .badge-pendiente {
-    background-color: rgba(168, 85, 247, 0.18);
-    color: #c084fc;
-    border: 1px solid rgba(168, 85, 247, 0.35);
+    background-color: rgba(168, 85, 247, 0.22);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.5);
 }
 .badge-proveedor {
-    background-color: rgba(249, 115, 22, 0.18);
-    color: #fb923c;
-    border: 1px solid rgba(249, 115, 22, 0.35);
+    background-color: rgba(249, 115, 22, 0.22);
+    color: #fdba74;
+    border: 1px solid rgba(249, 115, 22, 0.5);
 }
 .badge-traslado {
-    background-color: rgba(56, 189, 248, 0.18);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.35);
+    background-color: rgba(56, 189, 248, 0.22);
+    color: #7dd3fc;
+    border: 1px solid rgba(56, 189, 248, 0.5);
 }
 .badge-rechazada {
-    background-color: rgba(239, 68, 68, 0.18);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.35);
+    background-color: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.5);
 }
 .badge-completada {
-    background-color: rgba(100, 116, 139, 0.18);
-    color: #94a3b8;
-    border: 1px solid rgba(100, 116, 139, 0.35);
+    background-color: rgba(100, 116, 139, 0.25);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.5);
 }
 
 /* Puntos de estado SKU */
@@ -505,22 +505,31 @@ body {
     font-size: 0.85rem;
 }
 .table-dark-custom thead th {
-    background-color: #0c121e;
-    color: var(--text-muted);
-    font-size: 0.72rem;
-    font-weight: 700;
+    background-color: #141d2e !important;
+    color: #f8fafc !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid var(--border-card);
+    letter-spacing: 0.6px;
+    padding: 0.9rem 1rem;
+    border-bottom: 2px solid var(--border-light) !important;
 }
 .table-dark-custom tbody td {
     padding: 0.85rem 1rem;
-    border-bottom: 1px solid #162238;
+    border-bottom: 1px solid #1a2744;
     vertical-align: middle;
+    color: #e2e8f0;
+}
+.table-dark-custom tbody td code {
+    color: #93c5fd;
+    background-color: rgba(59, 130, 246, 0.15);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
 }
 .table-dark-custom tbody tr:hover td {
-    background-color: rgba(26, 38, 62, 0.4);
+    background-color: rgba(30, 41, 59, 0.5);
 }
 
 /* ==========================================================================
@@ -535,40 +544,54 @@ body {
 .filter-chip {
     padding: 0.4rem 0.85rem;
     border-radius: 8px;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 600;
-    background-color: rgba(17, 24, 39, 0.6);
-    border: 1px solid var(--border-card);
+    background-color: rgba(17, 24, 39, 0.8);
+    border: 1px solid var(--border-light);
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 .filter-chip:hover {
-    border-color: var(--border-light);
-    color: #ffffff;
-}
-.filter-chip.active {
-    background-color: #1e3a8a;
     border-color: var(--accent-blue);
     color: #ffffff;
 }
+.filter-chip.active {
+    background-color: #1d4ed8;
+    border-color: var(--accent-blue);
+    color: #ffffff;
+    font-weight: 700;
+}
 
 /* Inputs y Selects */
-.input-dark {
+.input-dark,
+.form-control.input-dark,
+.form-select.input-dark {
     background-color: var(--bg-input) !important;
     border: 1px solid var(--border-light) !important;
     color: #ffffff !important;
     border-radius: 8px !important;
-    font-size: 0.85rem !important;
+    font-size: 0.88rem !important;
     padding: 0.55rem 0.85rem !important;
 }
-.input-dark:focus {
+.input-dark:focus,
+.form-control.input-dark:focus,
+.form-select.input-dark:focus {
     border-color: var(--accent-blue) !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+    background-color: #0b1122 !important;
+    color: #ffffff !important;
     outline: none !important;
 }
 .input-dark::placeholder {
-    color: var(--text-muted);
+    color: var(--text-muted) !important;
+}
+.input-dark option,
+select.input-dark option,
+.form-select.input-dark option {
+    background-color: #111827 !important;
+    color: #ffffff !important;
+    padding: 8px 12px;
 }
 
 /* Botones */
@@ -624,21 +647,48 @@ body {
    ========================================================================== */
 .modal-content-dark {
     background-color: #111827;
-    border: 1px solid var(--border-card);
+    border: 1px solid var(--border-light);
     border-radius: 14px;
     color: var(--text-primary);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75);
 }
 .modal-header-dark {
-    border-bottom: 1px solid var(--border-card);
+    border-bottom: 1px solid var(--border-light);
     padding: 1.25rem 1.5rem;
+    background-color: #141d2e;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+}
+.modal-header-dark .modal-title,
+.modal-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.25rem;
+    letter-spacing: -0.2px;
 }
 .modal-body-dark {
     padding: 1.5rem;
+    background-color: #111827;
 }
 .modal-footer-dark {
-    border-top: 1px solid var(--border-card);
+    border-top: 1px solid var(--border-light);
     padding: 1rem 1.5rem;
+    background-color: #0f1624;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+/* Modal Form Labels y Titulos de Campos - Alta Legibilidad */
+.modal-content-dark .form-label,
+.modal-body-dark .form-label,
+.modal-content-dark label,
+.form-label-dark {
+    color: #f1f5f9 !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
 }
 
 /* Toggle Dual de Solicitud (Pedido a proveedor vs Traslado) */
@@ -649,8 +699,8 @@ body {
     margin-bottom: 1.25rem;
 }
 .toggle-card {
-    border: 1px solid var(--border-card);
-    background-color: #0b0f19;
+    border: 1px solid var(--border-light);
+    background-color: #0b1120;
     border-radius: 10px;
     padding: 0.85rem;
     cursor: pointer;
@@ -661,11 +711,11 @@ body {
 }
 .toggle-card.active-supplier {
     border-color: var(--accent-amber);
-    background-color: rgba(245, 158, 11, 0.07);
+    background-color: rgba(245, 158, 11, 0.12);
 }
 .toggle-card.active-transfer {
     border-color: var(--accent-blue);
-    background-color: rgba(59, 130, 246, 0.07);
+    background-color: rgba(59, 130, 246, 0.12);
 }
 .toggle-card-title {
     font-size: 0.85rem;
@@ -675,8 +725,50 @@ body {
     gap: 0.4rem;
 }
 .toggle-card-desc {
-    font-size: 0.72rem;
-    color: var(--text-muted);
+    font-size: 0.75rem;
+    color: #cbd5e1;
+}
+
+/* Enlace/Boton de Edicion Rapida en Matriz de Inventario */
+.quick-stock-edit-btn {
+    display: inline-block;
+    font-size: 0.72rem !important;
+    color: #60a5fa !important;
+    font-weight: 600;
+    text-decoration: underline;
+    margin-top: 3px;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background-color: rgba(59, 130, 246, 0.12);
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+.quick-stock-edit-btn:hover {
+    color: #ffffff !important;
+    background-color: #2563eb;
+    text-decoration: none;
+}
+
+/* Utilidades Globales de Contraste para Textos */
+.text-muted {
+    color: #94a3b8 !important;
+}
+.text-secondary {
+    color: #cbd5e1 !important;
+}
+.small.text-muted,
+span.text-muted,
+div.text-muted {
+    color: #cbd5e1 !important;
+}
+#recentRequestsCountBadge {
+    background-color: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    color: #cbd5e1 !important;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
 }
 
 /* ==========================================================================
