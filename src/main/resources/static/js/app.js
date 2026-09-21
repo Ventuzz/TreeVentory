@@ -26,6 +26,19 @@ function dismissCriticalAlertBanner() {
     }
 }
 
+function getActivePendingRequest(branchId, productId) {
+    if (!cachedRequests || !cachedRequests.length) return null;
+    return cachedRequests.find(r =>
+        r.destinationBranch && r.destinationBranch.id === branchId &&
+        r.product && r.product.id === productId &&
+        r.status === 'PENDING'
+    ) || null;
+}
+
+function hasActiveRequest(branchId, productId) {
+    return !!getActivePendingRequest(branchId, productId);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initAuth();
     setupEventListeners();
@@ -198,26 +211,29 @@ function updateTopAlertPill() {
     const relevantAlerts = (isGerente && currentUser.branchId) ?
         cachedAlerts.filter(a => a.branchId === currentUser.branchId) : cachedAlerts;
 
+    // Solo contar alertas sin atender (las que NO tienen solicitud pendiente de reposición)
+    const unattendedAlerts = relevantAlerts.filter(a => !hasActiveRequest(a.branchId, a.productId));
+
     const pill = document.getElementById('topbarAlertPill');
     const textEl = document.getElementById('topbarAlertText');
     const iconEl = document.getElementById('topbarAlertIcon');
     const navBadge = document.getElementById('navAlertBadge');
 
     if (navBadge) {
-        navBadge.textContent = relevantAlerts.length;
+        navBadge.textContent = unattendedAlerts.length;
     }
 
     if (!pill || !textEl) return;
 
-    if (relevantAlerts.length === 0) {
+    if (unattendedAlerts.length === 0) {
         pill.classList.add('d-none');
         return;
     }
 
     pill.classList.remove('d-none');
 
-    const criticalAlerts = relevantAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
-    const lowAlerts = relevantAlerts.filter(a => a.alertLevel !== 'CRITICAL' && a.currentStock > 0);
+    const criticalAlerts = unattendedAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
+    const lowAlerts = unattendedAlerts.filter(a => a.alertLevel !== 'CRITICAL' && a.currentStock > 0);
 
     if (criticalAlerts.length > 0) {
         pill.classList.remove('pill-warning');
@@ -363,14 +379,15 @@ function renderDashboard() {
             document.getElementById('branchBannerPhone').textContent = myBranch.phone || '55-1001-0001';
         }
 
-        // Alertas críticas del gerente
+        // Alertas del gerente (separando las pendientes sin atender de las que ya tienen solicitud en proceso)
         const myAlerts = cachedAlerts.filter(a => a.branchId === (currentUser.branchId || 1));
-        const criticalAlerts = myAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
-        const criticalCount = criticalAlerts.length;
+        const unattendedAlerts = myAlerts.filter(a => !hasActiveRequest(a.branchId, a.productId));
+        const unattendedCriticals = unattendedAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
+        const criticalCount = unattendedCriticals.length;
 
         if (criticalCount > 0 && !criticalAlertDismissedByUser) {
             criticalAlertBanner.classList.remove('d-none');
-            const names = criticalAlerts.slice(0, 2).map(a => a.productName);
+            const names = unattendedCriticals.slice(0, 2).map(a => a.productName);
             let sub = names.join(', ');
             if (criticalCount > 2) {
                 sub += ' y más';
@@ -389,8 +406,8 @@ function renderDashboard() {
         document.getElementById('kpiValue1').textContent = totalUnits.toLocaleString();
         document.getElementById('kpiSub1').textContent = `${myInventories.length} tipos de producto`;
 
-        document.getElementById('kpiValue2').textContent = myAlerts.length;
-        document.getElementById('kpiSub2').textContent = `${criticalCount} críticos`;
+        document.getElementById('kpiValue2').textContent = unattendedAlerts.length;
+        document.getElementById('kpiSub2').textContent = `${criticalCount} críticos sin atender`;
 
         const myReqs = cachedRequests.filter(r => r.destinationBranch && r.destinationBranch.id === (currentUser.branchId || 1));
         const myPending = myReqs.filter(r => r.status === 'PENDING').length;
@@ -403,9 +420,9 @@ function renderDashboard() {
         document.getElementById('kpiValue4').textContent = '4';
         document.getElementById('kpiSub4').textContent = 'activos en sucursal';
 
-        // Panel Izquierdo: Productos con stock bajo (Tabla)
+        // Panel Izquierdo: Productos con stock bajo (Tabla completa, con estado visual según solicitud)
         document.getElementById('dashboardPanelLeftTitle').textContent = 'Productos con stock bajo';
-        document.getElementById('dashboardPanelLeftTag').textContent = `${myAlerts.length} alertas`;
+        document.getElementById('dashboardPanelLeftTag').textContent = `${unattendedAlerts.length} sin atender`;
         renderManagerDashboardLowStock(myAlerts);
 
         // Panel Derecho: Solicitudes Recientes de la Sucursal
@@ -424,8 +441,11 @@ function renderDashboard() {
         document.getElementById('kpiValue1').textContent = totalUnitsGlobal.toLocaleString();
         document.getElementById('kpiSub1').textContent = `${cachedProducts.length} productos distintos`;
 
-        document.getElementById('kpiValue2').textContent = cachedAlerts.length;
-        document.getElementById('kpiSub2').textContent = `de ${cachedInventories.length} registros`;
+        const unattendedGlobalAlerts = cachedAlerts.filter(a => !hasActiveRequest(a.branchId, a.productId));
+        const unattendedGlobalCriticals = unattendedGlobalAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
+
+        document.getElementById('kpiValue2').textContent = unattendedGlobalAlerts.length;
+        document.getElementById('kpiSub2').textContent = `${unattendedGlobalCriticals.length} críticos sin atender`;
 
         const pendingCount = cachedRequests.filter(r => r.status === 'PENDING').length;
         document.getElementById('kpiLabel3').textContent = 'SOLICITUDES PENDIENTES';
@@ -441,12 +461,11 @@ function renderDashboard() {
         document.getElementById('dashboardPanelLeftTag').textContent = 'unidades totales';
         renderAdminBranchBars();
 
-        // Panel Derecho: Alertas Críticas Globales
-        const criticals = cachedAlerts.filter(a => a.alertLevel === 'CRITICAL');
+        // Panel Derecho: Alertas Críticas Globales Sin Atender
         document.getElementById('dashboardPanelRightTitle').textContent = 'Alertas críticas';
         document.getElementById('dashboardPanelRightBadge').className = 'badge-status badge-sin-stock';
-        document.getElementById('dashboardPanelRightBadge').textContent = `${criticals.length} sin stock`;
-        renderAdminCriticalAlerts(criticals);
+        document.getElementById('dashboardPanelRightBadge').textContent = `${unattendedGlobalCriticals.length} sin stock`;
+        renderAdminCriticalAlerts(unattendedGlobalCriticals);
     }
 
     // Tabla inferior de solicitudes recientes
@@ -534,25 +553,39 @@ function renderManagerDashboardLowStock(myAlerts) {
                 <tbody>
     `;
 
-    myAlerts.slice(0, 6).forEach(a => {
+    myAlerts.slice(0, 8).forEach(a => {
         const isSinStock = a.currentStock === 0;
-        const statusBadge = isSinStock ?
+        const pendingReq = getActivePendingRequest(a.branchId, a.productId);
+        const isPending = !!pendingReq;
+
+        let statusBadge = isSinStock ?
             `<span class="badge-status badge-sin-stock">Sin stock</span>` :
             `<span class="badge-status badge-bajo">Bajo</span>`;
+
+        let actionHtml = `
+            <button class="btn btn-sm btn-pill-red py-1 px-2" style="font-size: 0.75rem;" onclick="openNewRequestModal(${a.productId}, 'SUPPLIER')">
+                Solicitar
+            </button>
+        `;
+
+        if (isPending) {
+            statusBadge = `<span class="badge-status badge-pendiente">Pendiente</span>`;
+            actionHtml = `<span class="badge-status badge-pendiente py-1 px-2" style="font-size: 0.75rem;"><i class="bi bi-hourglass-split me-1"></i>En proceso</span>`;
+        }
 
         html += `
             <tr>
                 <td>
                     <div class="fw-semibold text-white">${a.productName}</div>
-                    <div class="text-secondary" style="font-size: 0.75rem; font-weight: 500;">${a.productSku}</div>
+                    <div class="text-secondary" style="font-size: 0.75rem; font-weight: 500;">
+                        ${a.productSku}${isPending ? ' · <span class="text-warning">Solicitud #r' + pendingReq.id + '</span>' : ''}
+                    </div>
                 </td>
                 <td class="fw-bold ${isSinStock ? 'text-danger' : 'text-warning'}">${a.currentStock}</td>
                 <td>${a.minStockThreshold}</td>
                 <td>${statusBadge}</td>
                 <td class="text-end">
-                    <button class="btn btn-sm btn-pill-red py-1 px-2" style="font-size: 0.75rem;" onclick="openNewRequestModal(${a.productId}, 'SUPPLIER')">
-                        Solicitar
-                    </button>
+                    ${actionHtml}
                 </td>
             </tr>
         `;
@@ -731,10 +764,11 @@ function quickEditStockAdmin(branchId, productId, currentQty, prodName, branchNa
 function filterManagerStock(filter) {
     activeManagerStockFilter = filter;
     document.querySelectorAll('.chips-group .filter-chip').forEach(c => c.classList.remove('active'));
-    if (filter === 'all') document.getElementById('chipAll').classList.add('active');
-    if (filter === 'critico') document.getElementById('chipCritico').classList.add('active');
-    if (filter === 'bajo') document.getElementById('chipBajo').classList.add('active');
-    if (filter === 'normal') document.getElementById('chipNormal').classList.add('active');
+    if (filter === 'all') document.getElementById('chipAll')?.classList.add('active');
+    if (filter === 'critico') document.getElementById('chipCritico')?.classList.add('active');
+    if (filter === 'bajo') document.getElementById('chipBajo')?.classList.add('active');
+    if (filter === 'pendiente') document.getElementById('chipPendiente')?.classList.add('active');
+    if (filter === 'normal') document.getElementById('chipNormal')?.classList.add('active');
     renderManagerInventoryTable();
 }
 
@@ -752,6 +786,9 @@ function renderManagerInventoryTable() {
         const p = inv.product;
         const qty = inv.quantity;
         const min = p.minStockThreshold || 10;
+        const pendingReq = getActivePendingRequest(branchId, p.id);
+        const hasPending = !!pendingReq;
+
         let estado = 'Normal';
         let level = 'normal';
 
@@ -766,22 +803,37 @@ function renderManagerInventoryTable() {
             level = 'bajo';
         }
 
-        return { inv, product: p, quantity: qty, min, estado, level };
+        // Si tiene solicitud en proceso, el estado cambia a Pendiente
+        if (hasPending) {
+            estado = 'Pendiente';
+        }
+
+        return { inv, product: p, quantity: qty, min, estado, level, hasPending, pendingReq };
     });
 
     // Actualizar contadores de chips
     const countAll = items.length;
     const countCritico = items.filter(i => i.level === 'critico').length;
     const countBajo = items.filter(i => i.level === 'bajo').length;
+    const countPendiente = items.filter(i => i.hasPending).length;
     const countNormal = items.filter(i => i.level === 'normal').length;
 
-    document.getElementById('chipAll').textContent = `Todo (${countAll})`;
-    document.getElementById('chipCritico').textContent = `Crítico (${countCritico})`;
-    document.getElementById('chipBajo').textContent = `Bajo (${countBajo})`;
-    document.getElementById('chipNormal').textContent = `Normal (${countNormal})`;
+    const chipAll = document.getElementById('chipAll');
+    const chipCritico = document.getElementById('chipCritico');
+    const chipBajo = document.getElementById('chipBajo');
+    const chipPendiente = document.getElementById('chipPendiente');
+    const chipNormal = document.getElementById('chipNormal');
+
+    if (chipAll) chipAll.textContent = `Todo (${countAll})`;
+    if (chipCritico) chipCritico.textContent = `Crítico (${countCritico})`;
+    if (chipBajo) chipBajo.textContent = `Bajo (${countBajo})`;
+    if (chipPendiente) chipPendiente.textContent = `Pendiente (${countPendiente})`;
+    if (chipNormal) chipNormal.textContent = `Normal (${countNormal})`;
 
     // Aplicar filtros
-    if (activeManagerStockFilter !== 'all') {
+    if (activeManagerStockFilter === 'pendiente') {
+        items = items.filter(i => i.hasPending);
+    } else if (activeManagerStockFilter !== 'all') {
         items = items.filter(i => i.level === activeManagerStockFilter);
     }
     if (search) {
@@ -791,33 +843,50 @@ function renderManagerInventoryTable() {
         items = items.filter(i => i.product.category === catFilter);
     }
 
+    if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-secondary">No se encontraron productos coincidentes.</td></tr>`;
+        return;
+    }
+
     items.forEach(item => {
         const p = item.product;
         const isUrgent = item.level === 'critico';
         const isLow = item.level === 'bajo';
+        const hasPending = item.hasPending;
+        const pendingReq = item.pendingReq;
 
         let dotClass = 'status-dot-green';
         let barClass = 'stock-bar-green';
         let badgeClass = 'badge-normal';
         let subtext = '';
 
-        if (item.estado === 'Sin stock' || item.estado === 'Crítico') {
+        if (item.level === 'critico') {
             dotClass = 'status-dot-red';
             barClass = 'stock-bar-red';
             badgeClass = 'badge-sin-stock';
             subtext = `<div class="text-danger" style="font-size: 0.72rem;">⚠️ Requiere reposición inmediata</div>`;
-        } else if (item.estado === 'Bajo') {
+        } else if (item.level === 'bajo') {
             dotClass = 'status-dot-amber';
             barClass = 'stock-bar-amber';
             badgeClass = 'badge-bajo';
             subtext = `<div class="text-warning" style="font-size: 0.72rem;">⚠️ Considera hacer una solicitud</div>`;
         }
 
+        if (hasPending) {
+            badgeClass = 'badge-pendiente';
+            subtext = `<div class="text-warning" style="font-size: 0.72rem;"><i class="bi bi-clock-history me-1"></i>Solicitud #r${pendingReq.id} en proceso</div>`;
+        }
+
         const pct = Math.min(100, Math.round((item.quantity / (item.min * 3)) * 100));
 
-        // Requerimiento clave del usuario: Botón de acción rápida si el estado es bajo o crítico
         let actionBtn = `<span class="text-secondary small">-</span>`;
-        if (isUrgent || isLow) {
+        if (hasPending) {
+            actionBtn = `
+                <span class="badge-status badge-pendiente py-1 px-2" style="font-size: 0.75rem;">
+                    <i class="bi bi-hourglass-split me-1"></i>En proceso
+                </span>
+            `;
+        } else if (isUrgent || isLow) {
             actionBtn = `
                 <button class="btn btn-sm btn-pill-red py-1 px-2" style="font-size: 0.75rem;" onclick="openNewRequestModal(${p.id}, 'SUPPLIER')">
                     <i class="bi bi-box-arrow-in-down me-1"></i>Solicitar
@@ -1232,10 +1301,17 @@ function openNewRequestModal(productId = null, defaultType = 'SUPPLIER', targetB
     selectRequestType(defaultType);
 
     const destSelect = document.getElementById('modalReqDestBranch');
+    const destBranchId = targetBranchId || (currentUser && currentUser.branchId ? currentUser.branchId : (destSelect ? parseInt(destSelect.value) : 1));
     if (targetBranchId) {
         destSelect.value = targetBranchId;
     } else if (currentUser.branchId) {
         destSelect.value = currentUser.branchId;
+    }
+
+    if (productId && destBranchId && hasActiveRequest(destBranchId, productId)) {
+        const existing = getActivePendingRequest(destBranchId, productId);
+        alert(`Ya existe una solicitud pendiente de reposición para este producto (#r${existing.id}). No es posible duplicar solicitudes en proceso.`);
+        return;
     }
 
     if (productId) {
@@ -1294,12 +1370,21 @@ function setupEventListeners() {
     const btnEnviarSolicitud = document.getElementById('btnEnviarSolicitud');
     if (btnEnviarSolicitud) {
         btnEnviarSolicitud.addEventListener('click', async () => {
+            const destBranchId = parseInt(document.getElementById('modalReqDestBranch').value);
+            const prodId = parseInt(document.getElementById('modalReqProduct').value);
+
+            if (hasActiveRequest(destBranchId, prodId)) {
+                const existing = getActivePendingRequest(destBranchId, prodId);
+                alert(`Ya existe una solicitud pendiente de reposición para este producto (#r${existing.id}). No es posible crear solicitudes duplicadas.`);
+                return;
+            }
+
             const reqType = document.getElementById('modalReqType').value;
             const payload = {
                 requestType: reqType,
                 originBranchId: reqType === 'TRANSFER' ? parseInt(document.getElementById('modalReqOriginBranch').value) : null,
-                destinationBranchId: parseInt(document.getElementById('modalReqDestBranch').value),
-                productId: parseInt(document.getElementById('modalReqProduct').value),
+                destinationBranchId: destBranchId,
+                productId: prodId,
                 quantity: parseInt(document.getElementById('modalReqQuantity').value),
                 notes: document.getElementById('modalReqNotes').value
             };

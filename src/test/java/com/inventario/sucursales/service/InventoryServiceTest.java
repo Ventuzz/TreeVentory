@@ -6,6 +6,7 @@ import com.inventario.sucursales.entity.Inventory;
 import com.inventario.sucursales.entity.Product;
 import com.inventario.sucursales.repository.BranchRepository;
 import com.inventario.sucursales.repository.InventoryRepository;
+import com.inventario.sucursales.repository.InventoryRequestRepository;
 import com.inventario.sucursales.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,9 @@ class InventoryServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private InventoryRequestRepository requestRepository;
 
     @InjectMocks
     private InventoryService inventoryService;

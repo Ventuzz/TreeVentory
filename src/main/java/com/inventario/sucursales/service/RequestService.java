@@ -94,6 +94,14 @@ public class RequestService {
             }
         }
 
+        // Validar que no exista ya una solicitud PENDIENTE para este producto en la sucursal de destino
+        boolean alreadyPending = requestRepository.existsByDestinationBranchIdAndProductIdAndStatus(
+                destinationBranch.getId(), product.getId(), RequestStatus.PENDING);
+        if (alreadyPending) {
+            throw new IllegalStateException("Ya existe una solicitud pendiente de reposición para el producto '" +
+                    product.getName() + "' en la sucursal " + destinationBranch.getName());
+        }
+
         InventoryRequest request = new InventoryRequest();
         request.setRequestType(dto.getRequestType());
         request.setOriginBranch(originBranch);

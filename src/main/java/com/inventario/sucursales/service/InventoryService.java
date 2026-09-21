@@ -14,17 +14,31 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.inventario.sucursales.repository.InventoryRequestRepository;
+import com.inventario.sucursales.entity.RequestStatus;
+
 @Service
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
+    private final InventoryRequestRepository requestRepository;
 
-    public InventoryService(InventoryRepository inventoryRepository, BranchRepository branchRepository, ProductRepository productRepository) {
+    public InventoryService(InventoryRepository inventoryRepository,
+                          BranchRepository branchRepository,
+                          ProductRepository productRepository,
+                          InventoryRequestRepository requestRepository) {
         this.inventoryRepository = inventoryRepository;
         this.branchRepository = branchRepository;
         this.productRepository = productRepository;
+        this.requestRepository = requestRepository;
+    }
+
+    public InventoryService(InventoryRepository inventoryRepository,
+                          BranchRepository branchRepository,
+                          ProductRepository productRepository) {
+        this(inventoryRepository, branchRepository, productRepository, null);
     }
 
     @Transactional(readOnly = true)
@@ -102,7 +116,7 @@ public class InventoryService {
     }
 
     private InventoryAlertDto mapToAlertDto(Inventory inv) {
-        return new InventoryAlertDto(
+        InventoryAlertDto dto = new InventoryAlertDto(
                 inv.getId(),
                 inv.getBranch().getId(),
                 inv.getBranch().getName(),
@@ -113,5 +127,14 @@ public class InventoryService {
                 inv.getQuantity(),
                 inv.getProduct().getMinStockThreshold()
         );
+        if (requestRepository != null) {
+            requestRepository.findByDestinationBranchIdAndProductIdAndStatus(
+                    inv.getBranch().getId(), inv.getProduct().getId(), RequestStatus.PENDING
+            ).ifPresent(req -> {
+                dto.setHasPendingRequest(true);
+                dto.setPendingRequestId(req.getId());
+            });
+        }
+        return dto;
     }
 }

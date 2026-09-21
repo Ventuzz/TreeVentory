@@ -20,4 +20,8 @@ public interface InventoryRequestRepository extends JpaRepository<InventoryReque
 
     @Query("SELECT r FROM InventoryRequest r WHERE r.destinationBranch.id = :branchId OR r.originBranch.id = :branchId ORDER BY r.createdAt DESC")
     List<InventoryRequest> findByBranchInvolved(@Param("branchId") Long branchId);
+
+    boolean existsByDestinationBranchIdAndProductIdAndStatus(Long destinationBranchId, Long productId, RequestStatus status);
+
+    java.util.Optional<InventoryRequest> findByDestinationBranchIdAndProductIdAndStatus(Long destinationBranchId, Long productId, RequestStatus status);
 }

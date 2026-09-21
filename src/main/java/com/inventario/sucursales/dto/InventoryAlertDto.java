@@ -108,6 +108,9 @@ public class InventoryAlertDto {
         this.minStockThreshold = minStockThreshold;
     }
 
+    private Boolean hasPendingRequest = false;
+    private Long pendingRequestId;
+
     public String getAlertLevel() {
         return alertLevel;
     }
@@ -122,5 +125,21 @@ public class InventoryAlertDto {
 
     public void setAlertMessage(String alertMessage) {
         this.alertMessage = alertMessage;
+    }
+
+    public Boolean getHasPendingRequest() {
+        return hasPendingRequest;
+    }
+
+    public void setHasPendingRequest(Boolean hasPendingRequest) {
+        this.hasPendingRequest = hasPendingRequest;
+    }
+
+    public Long getPendingRequestId() {
+        return pendingRequestId;
+    }
+
+    public void setPendingRequestId(Long pendingRequestId) {
+        this.pendingRequestId = pendingRequestId;
     }
 }

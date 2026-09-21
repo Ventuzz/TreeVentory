@@ -197,4 +197,17 @@ class RequestServiceTest {
 
         assertThrows(IllegalStateException.class, () -> requestService.approveRequest(103L, null, "admin"));
     }
+
+    @Test
+    void testCreateRequestAlreadyPendingThrows() {
+        CreateRequestDto dto = new CreateRequestDto(RequestType.SUPPLIER, null, 2L, 10L, 15, "Reposición");
+
+        when(userRepository.findByUsername("gerente_cdmx")).thenReturn(Optional.of(gerenteUser));
+        when(branchRepository.findById(2L)).thenReturn(Optional.of(destBranch));
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+        when(requestRepository.existsByDestinationBranchIdAndProductIdAndStatus(2L, 10L, RequestStatus.PENDING)).thenReturn(true);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> requestService.createRequest(dto, "gerente_cdmx"));
+        assertTrue(ex.getMessage().contains("Ya existe una solicitud pendiente de reposición"));
+    }
 }
