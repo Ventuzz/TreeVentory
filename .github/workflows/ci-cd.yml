@@ -12,16 +12,6 @@ jobs:
     name: Pruebas Unitarias y Cobertura JaCoCo
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: inventario_db
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
-
     steps:
       - name: Descargar Código del Repositorio (Checkout)
         uses: actions/checkout@v4
@@ -39,10 +29,7 @@ jobs:
       - name: Ejecutar Pruebas Automatizadas con JaCoCo (Cobertura >= 80%)
         env:
           JWT_SECRET: SuperClaveSecretaUltraSeguraParaFirmarTokensJWT2026EnInventarioMultiSucursalMexico
-          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/inventario_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: root
-        run: ./mvnw clean test jacoco:report
+        run: ./mvnw clean verify
 
       - name: Publicar Reporte de Cobertura JaCoCo como Artefacto
         uses: actions/upload-artifact@v4
@@ -124,6 +111,15 @@ jobs:
 
       - name: Verificación de Estado (Smoke Test & Health Check)
         run: |
-          echo "Verificando endpoint de salud de la aplicación..."
-          curl -f http://localhost:8080/actuator/health || echo "Servicio respondiendo en el entorno de pruebas"
+          echo "Verificando inicio del servicio en el entorno de pruebas..."
+          for i in $(seq 1 25); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Aplicación iniciada exitosamente y respondiendo 200 OK en /actuator/health"
+              break
+            fi
+            echo "Esperando que el servicio responda... Intento $i/25 (Código HTTP: $STATUS)"
+            sleep 2
+          done
+          curl -f http://localhost:8080/actuator/health
           echo "Despliegue verificado exitosamente en el entorno de pruebas."
