@@ -16,6 +16,15 @@ let activeManagerStockFilter = 'all';
 let activeRequestStatusFilter = 'all';
 let activeRequestTypeFilter = 'all';
 let currentActiveView = 'dashboard';
+let criticalAlertDismissedByUser = false;
+
+function dismissCriticalAlertBanner() {
+    criticalAlertDismissedByUser = true;
+    const banner = document.getElementById('gerenteCriticalAlertBanner');
+    if (banner) {
+        banner.classList.add('d-none');
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     initAuth();
@@ -128,6 +137,7 @@ function logout() {
     localStorage.removeItem('treeventory_user');
     currentToken = null;
     currentUser = null;
+    criticalAlertDismissedByUser = false;
     showLogin();
 }
 
@@ -184,16 +194,46 @@ async function loadAllData() {
 }
 
 function updateTopAlertPill() {
-    const isGerente = currentUser.role === 'ROLE_GERENTE';
-    const relevantAlerts = isGerente && currentUser.branchId ?
+    const isGerente = currentUser && currentUser.role === 'ROLE_GERENTE';
+    const relevantAlerts = (isGerente && currentUser.branchId) ?
         cachedAlerts.filter(a => a.branchId === currentUser.branchId) : cachedAlerts;
 
-    const alertText = `${relevantAlerts.length} alertas de stock bajo`;
-    const pill = document.getElementById('topbarAlertText');
-    if (pill) pill.textContent = alertText;
-
+    const pill = document.getElementById('topbarAlertPill');
+    const textEl = document.getElementById('topbarAlertText');
+    const iconEl = document.getElementById('topbarAlertIcon');
     const navBadge = document.getElementById('navAlertBadge');
-    if (navBadge) navBadge.textContent = relevantAlerts.length;
+
+    if (navBadge) {
+        navBadge.textContent = relevantAlerts.length;
+    }
+
+    if (!pill || !textEl) return;
+
+    if (relevantAlerts.length === 0) {
+        pill.classList.add('d-none');
+        return;
+    }
+
+    pill.classList.remove('d-none');
+
+    const criticalAlerts = relevantAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
+    const lowAlerts = relevantAlerts.filter(a => a.alertLevel !== 'CRITICAL' && a.currentStock > 0);
+
+    if (criticalAlerts.length > 0) {
+        pill.classList.remove('pill-warning');
+        pill.classList.add('pill-danger');
+        if (iconEl) {
+            iconEl.className = 'bi bi-exclamation-octagon-fill text-danger';
+        }
+        textEl.textContent = `${criticalAlerts.length} ${criticalAlerts.length === 1 ? 'alerta crítica' : 'alertas críticas'}`;
+    } else {
+        pill.classList.remove('pill-danger');
+        pill.classList.add('pill-warning');
+        if (iconEl) {
+            iconEl.className = 'bi bi-exclamation-triangle-fill text-warning';
+        }
+        textEl.textContent = `${lowAlerts.length} ${lowAlerts.length === 1 ? 'alerta de stock bajo' : 'alertas de stock bajo'}`;
+    }
 }
 
 function populateModalDropdowns() {
@@ -209,8 +249,13 @@ function populateModalDropdowns() {
     if (reqDestSelect) reqDestSelect.innerHTML = branchOptions;
     if (reqOrigSelect) reqOrigSelect.innerHTML = `<option value="">— Seleccionar origen —</option>` + branchOptions;
     if (empBranchSelect) empBranchSelect.innerHTML = `<option value="">Sin sucursal (Corporativo)</option>` + branchOptions;
-    if (otherBranchSelect) otherBranchSelect.innerHTML = branchOptions;
     if (empFilterBranch) empFilterBranch.innerHTML = `<option value="">Todas las sucursales</option>` + branchOptions;
+
+    if (otherBranchSelect) {
+        const otherBranchList = (currentUser.role === 'ROLE_GERENTE' && currentUser.branchId) ?
+            cachedBranches.filter(b => b.id !== currentUser.branchId) : cachedBranches;
+        otherBranchSelect.innerHTML = otherBranchList.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    }
 
     // Si es gerente, fijar destino a su sucursal
     if (currentUser.role === 'ROLE_GERENTE' && currentUser.branchId && reqDestSelect) {
@@ -231,8 +276,10 @@ function populateModalDropdowns() {
 
     const adminCatFilter = document.getElementById('adminInvCategoryFilter');
     const managerCatFilter = document.getElementById('managerInvCategoryFilter');
+    const otherBranchCatFilter = document.getElementById('otherBranchCategoryFilter');
     if (adminCatFilter) adminCatFilter.innerHTML = catOptions;
     if (managerCatFilter) managerCatFilter.innerHTML = catOptions;
+    if (otherBranchCatFilter) otherBranchCatFilter.innerHTML = catOptions;
 }
 
 // -------------------------------------------------------------
@@ -318,13 +365,18 @@ function renderDashboard() {
 
         // Alertas críticas del gerente
         const myAlerts = cachedAlerts.filter(a => a.branchId === (currentUser.branchId || 1));
-        const criticalCount = myAlerts.filter(a => a.alertLevel === 'CRITICAL').length;
+        const criticalAlerts = myAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
+        const criticalCount = criticalAlerts.length;
 
-        if (criticalCount > 0) {
+        if (criticalCount > 0 && !criticalAlertDismissedByUser) {
             criticalAlertBanner.classList.remove('d-none');
-            const criticalNames = myAlerts.filter(a => a.alertLevel === 'CRITICAL').slice(0, 3).map(a => a.productName).join(', ');
-            document.getElementById('criticalBannerTitle').textContent = `${criticalCount} productos en estado crítico`;
-            document.getElementById('criticalBannerSubtitle').textContent = `${criticalNames} y más`;
+            const names = criticalAlerts.slice(0, 2).map(a => a.productName);
+            let sub = names.join(', ');
+            if (criticalCount > 2) {
+                sub += ' y más';
+            }
+            document.getElementById('criticalBannerTitle').textContent = `${criticalCount} ${criticalCount === 1 ? 'producto en estado crítico' : 'productos en estado crítico'}`;
+            document.getElementById('criticalBannerSubtitle').textContent = sub || 'Atención requerida para reabastecimiento';
         } else {
             criticalAlertBanner.classList.add('d-none');
         }
@@ -856,10 +908,27 @@ function onOtherBranchChange() {
     document.getElementById('otherBranchAlerts').textContent = alertCount;
     document.getElementById('otherBranchTableTitle').textContent = `Inventario de ${branch.name} — solo lectura`;
 
+    const searchInput = document.getElementById('otherBranchSearch');
+    const catSelect = document.getElementById('otherBranchCategoryFilter');
+    const search = (searchInput && searchInput.value ? searchInput.value : '').toLowerCase().trim();
+    const catFilter = (catSelect && catSelect.value) ? catSelect.value : '';
+
+    const filteredInvs = branchInvs.filter(inv => {
+        const p = inv.product;
+        const matchSearch = p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+        const matchCat = !catFilter || p.category === catFilter;
+        return matchSearch && matchCat;
+    });
+
     const tbody = document.getElementById('otherBranchInventoryTbody');
     tbody.innerHTML = '';
 
-    branchInvs.forEach(inv => {
+    if (filteredInvs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-secondary">No se encontraron productos coincidentes en esta sucursal.</td></tr>`;
+        return;
+    }
+
+    filteredInvs.forEach(inv => {
         const p = inv.product;
         const qty = inv.quantity;
         const min = p.minStockThreshold || 10;
@@ -1205,6 +1274,21 @@ function setupEventListeners() {
     // Logout
     const btnLogout = document.getElementById('btnLogout');
     if (btnLogout) btnLogout.addEventListener('click', logout);
+
+    // Click en Alertas Topbar -> Redirigir a Inventario
+    const topAlertPill = document.getElementById('topbarAlertPill');
+    if (topAlertPill) {
+        topAlertPill.style.cursor = 'pointer';
+        topAlertPill.addEventListener('click', () => {
+            if (currentUser) {
+                if (currentUser.role === 'ROLE_ADMIN') {
+                    switchView('inventario_admin');
+                } else {
+                    switchView('mi_inventario');
+                }
+            }
+        });
+    }
 
     // Guardar Solicitud
     const btnEnviarSolicitud = document.getElementById('btnEnviarSolicitud');

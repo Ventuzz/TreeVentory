@@ -137,8 +137,8 @@
             <!-- TOPBAR HEADER -->
             <header class="topbar">
                 <h1 id="topbarSectionTitle" class="topbar-title">Dashboard</h1>
-                <div id="topbarAlertPill" class="topbar-alert-pill">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
+                <div id="topbarAlertPill" class="topbar-alert-pill pill-warning d-none">
+                    <i id="topbarAlertIcon" class="bi bi-exclamation-triangle-fill"></i>
                     <span id="topbarAlertText">0 alertas de stock bajo</span>
                 </div>
             </header>
@@ -174,9 +174,7 @@
                                 <div id="criticalBannerSubtitle" class="small text-secondary">Atención requerida para reabastecimiento</div>
                             </div>
                         </div>
-                        <button class="btn btn-pill-red" onclick="openNewRequestModal(null, 'SUPPLIER')">
-                            Solicitar reposición
-                        </button>
+                        <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" onclick="dismissCriticalAlertBanner()" title="Cerrar aviso"></button>
                     </div>
 
                     <!-- Tarjetas de Métricas KPI -->
@@ -421,6 +419,20 @@
                     <!-- Grid de Mini-Tarjetas de Sucursales -->
                     <div id="branchesMiniGrid" class="row g-2 mb-4">
                         <!-- Generado dinámicamente -->
+                    </div>
+
+                    <!-- Barra de Búsqueda y Filtro de Categoría (Otras Sucursales) -->
+                    <div class="card-dark p-3 mb-3">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <input type="text" id="otherBranchSearch" class="form-control input-dark" placeholder="Buscar producto o SKU..." oninput="onOtherBranchChange()">
+                            </div>
+                            <div class="col-md-6">
+                                <select id="otherBranchCategoryFilter" class="form-select input-dark" onchange="onOtherBranchChange()">
+                                    <option value="">Todas las categorías</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Tabla de Stock de la Sucursal Consultada -->
