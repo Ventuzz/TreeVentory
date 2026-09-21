@@ -20,7 +20,6 @@ public class JwtUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
-    // Inyectado desde properties/variables de entorno, nunca hardcodeado
     @Value("${jwt.secret}")
     private String jwtSecret;
 

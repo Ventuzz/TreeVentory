@@ -48,66 +48,69 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // # Desactivar CSRF para API REST sin estado
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // # Gestión de sesión sin estado
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // # Manejo de excepciones de autenticación y autorización (401 y 403 con JSON)
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("{\"success\":false,\"message\":\"No autorizado: Se requiere token JWT valido para acceder a este recurso.\"}");
-                })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.getWriter().write("{\"success\":false,\"message\":\"Acceso denegado: No posee los permisos requeridos para esta operacion.\"}");
-                })
-            )
-            // # Cabeceras HTTP de seguridad (OWASP ZAP best practices)
-            .headers(headers -> headers
-                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-                .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable) // spring will add X-Content-Type-Options: nosniff
-                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: https:; connect-src 'self'"))
-                .referrerPolicy(referrer -> referrer.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-            )
-            // # Reglas de autorización por endpoints y roles
-            .authorizeHttpRequests(auth -> auth
-                // # Endpoints públicos (Login, Frontend estático, Health check)
-                .requestMatchers(
-                    "/api/auth/**",
-                    "/",
-                    "/index.html",
-                    "/css/**",
-                    "/js/**",
-                    "/images/**",
-                    "/favicon.ico",
-                    "/actuator/health"
-                ).permitAll()
+                // # Desactivar CSRF para API REST sin estado
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // # Gestión de sesión sin estado
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // # Manejo de excepciones de autenticación y autorización (401 y 403 con JSON)
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"No autorizado: Se requiere token JWT valido para acceder a este recurso.\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Acceso denegado: No posee los permisos requeridos para esta operacion.\"}");
+                        }))
+                // # Cabeceras HTTP de seguridad
+                .headers(headers -> headers
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
+                        .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable) // spring will add
+                                                                                                 // X-Content-Type-Options:
+                                                                                                 // nosniff
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: https:; connect-src 'self'"))
+                        .referrerPolicy(referrer -> referrer.policy(
+                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
+                // # Reglas de autorización por endpoints y roles
+                .authorizeHttpRequests(auth -> auth
+                        // # Endpoints públicos (Login, Frontend estático, Health check)
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/",
+                                "/index.html",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico",
+                                "/actuator/health")
+                        .permitAll()
 
-                // # Operaciones exclusivas del Administrador (ROLE_ADMIN)
-                .requestMatchers("/api/employees/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/requests/*/approve").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/requests/*/reject").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/branches/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/branches/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/branches/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
+                        // # Operaciones exclusivas del Administrador (ROLE_ADMIN)
+                        .requestMatchers("/api/employees/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/requests/*/approve").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/requests/*/reject").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/branches/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/branches/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/branches/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
 
-                // # Operaciones accesibles por usuarios autenticados (ADMIN y GERENTE)
-                .requestMatchers(HttpMethod.GET, "/api/branches/**").hasAnyRole("ADMIN", "GERENTE")
-                .requestMatchers(HttpMethod.GET, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
-                .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
-                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
-                .requestMatchers(HttpMethod.GET, "/api/inventory/**").hasAnyRole("ADMIN", "GERENTE")
-                .requestMatchers(HttpMethod.GET, "/api/requests/**").hasAnyRole("ADMIN", "GERENTE")
-                .requestMatchers(HttpMethod.POST, "/api/requests/**").hasAnyRole("ADMIN", "GERENTE")
+                        // # Operaciones accesibles por usuarios autenticados (ADMIN y GERENTE)
+                        .requestMatchers(HttpMethod.GET, "/api/branches/**").hasAnyRole("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/inventory/**").hasAnyRole("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/requests/**").hasAnyRole("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/requests/**").hasAnyRole("ADMIN", "GERENTE")
 
-                // # Cualquier otra petición requiere autenticación
-                .anyRequest().authenticated()
-            );
+                        // # Cualquier otra petición requiere autenticación
+                        .anyRequest().authenticated());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
