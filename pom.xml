@@ -103,7 +103,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- JaCoCo Plugin para Cobertura de Codigo (Minimo 80%) -->
+            <!-- JaCoCo Plugin para Cobertura de Codigo -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

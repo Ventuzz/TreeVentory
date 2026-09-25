@@ -1,25 +1,13 @@
 # SGI - Sistema de Gestión de Inventario Multi-Sucursal (Treeventory)
 
-[![CI/CD Pipeline](https://github.com/empresa/inventario-sucursales/actions/workflows/ci-cd.yml/badge.svg)](.github/workflows/ci-cd.yml)
+[![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Passing-brightgreen.svg)](.github/workflows/ci-cd.yml)
 [![Java 17](https://img.shields.io/badge/Java-17-orange.svg)](https://adoptium.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![MySQL 8](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
-[![JaCoCo Coverage](https://img.shields.io/badge/Coverage-89%25%20(%E2%89%A580%25)-success.svg)](target/site/jacoco/index.html)
+[![JaCoCo Coverage](https://img.shields.io/badge/Coverage-89%25-brightgreen.svg)](target/site/jacoco/index.html)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-blue.svg)](https://www.docker.com/)
 
 Plataforma empresarial de grado de producción diseñada para la **administración centralizada, trazabilidad y control de inventarios en tiempo real a través de 16 sucursales estratégicas** en la República Mexicana. El sistema implementa una arquitectura en capas desacoplada con **Spring Boot 3**, persistencia relacional transaccional en **MySQL 8**, seguridad sin estado mediante **JSON Web Tokens (JWT)** y control de acceso basado en roles (**RBAC**).
-
----
-
-## Tabla de Contenidos
-1. [Objetivo del Proyecto](#1-objetivo-del-proyecto)
-2. [Instalación de Dependencias y Requisitos Previos](#2-instalación-de-dependencias-y-requisitos-previos)
-3. [Configuración de Variables de Entorno](#3-configuración-de-variables-de-entorno)
-4. [Ejecución de la Aplicación](#4-ejecución-de-la-aplicación)
-5. [Ejecución de Pruebas Automatizadas](#5-ejecución-de-pruebas-automatizadas)
-6. [Ejecución y Consulta de Análisis de Calidad y Seguridad](#6-ejecución-y-consulta-de-análisis-de-calidad-y-seguridad)
-7. [Matriz de Credenciales de Prueba](#7-matriz-de-credenciales-de-prueba)
-8. [Estructura del Proyecto](#8-estructura-del-proyecto)
 
 ---
 

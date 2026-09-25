@@ -33,3 +33,4 @@ ENV JWT_SECRET=ClaveSecretaSuperSeguraParaFirmarTokensJWTInventarioSucursalesMex
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
+

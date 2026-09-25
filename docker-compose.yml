@@ -13,7 +13,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
     ports:
       - "8080:8080"
 
-  # SonarQube Community Build (para análisis estático de código local)
+  # SonarQube Community Build (para análisis estático de código local )
   sonarqube:
     image: sonarqube:latest
     container_name: sonarqube
