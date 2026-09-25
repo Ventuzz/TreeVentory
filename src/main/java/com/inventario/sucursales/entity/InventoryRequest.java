@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
-// # Entidad JPA para registro y trazabilidad de solicitudes de traspaso y surtido
+// Entidad JPA para registro y trazabilidad de solicitudes de traspaso y surtido
 @Entity
 @Table(name = "inventory_requests")
 public class InventoryRequest {
@@ -66,7 +66,9 @@ public class InventoryRequest {
     public InventoryRequest() {
     }
 
-    public InventoryRequest(Long id, RequestType requestType, Branch originBranch, Branch destinationBranch, Product product, Integer quantity, RequestStatus status, User requester, User reviewer, String notes, String adminComments, LocalDateTime createdAt, LocalDateTime resolvedAt) {
+    public InventoryRequest(Long id, RequestType requestType, Branch originBranch, Branch destinationBranch,
+            Product product, Integer quantity, RequestStatus status, User requester, User reviewer, String notes,
+            String adminComments, LocalDateTime createdAt, LocalDateTime resolvedAt) {
         this.id = id;
         this.requestType = requestType;
         this.originBranch = originBranch;

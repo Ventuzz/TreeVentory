@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-// # Servicio para procesamiento de solicitudes de traspaso inter-sucursal y pedidos a proveedor
+// Servicio para procesamiento de solicitudes de traspaso inter-sucursal y pedidos a proveedor
 @Service
 public class RequestService {
 
@@ -24,10 +24,10 @@ public class RequestService {
     private final InventoryService inventoryService;
 
     public RequestService(InventoryRequestRepository requestRepository,
-                          BranchRepository branchRepository,
-                          ProductRepository productRepository,
-                          UserRepository userRepository,
-                          InventoryService inventoryService) {
+            BranchRepository branchRepository,
+            ProductRepository productRepository,
+            UserRepository userRepository,
+            InventoryService inventoryService) {
         this.requestRepository = requestRepository;
         this.branchRepository = branchRepository;
         this.productRepository = productRepository;
@@ -43,7 +43,7 @@ public class RequestService {
         if (user.getRole() == Role.ROLE_ADMIN) {
             return requestRepository.findAllByOrderByCreatedAtDesc();
         } else {
-            // # Los gerentes solo consultan las solicitudes vinculadas a su sucursal
+            // Los gerentes solo consultan las solicitudes vinculadas a su sucursal
             if (user.getBranch() == null) {
                 return List.of();
             }
@@ -63,7 +63,8 @@ public class RequestService {
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + username));
 
         Branch destinationBranch = branchRepository.findById(dto.getDestinationBranchId())
-                .orElseThrow(() -> new IllegalArgumentException("Sucursal de destino no valida: " + dto.getDestinationBranchId()));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Sucursal de destino no valida: " + dto.getDestinationBranchId()));
 
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Producto no valido: " + dto.getProductId()));
@@ -71,31 +72,37 @@ public class RequestService {
         Branch originBranch = null;
         if (dto.getRequestType() == RequestType.TRANSFER) {
             if (dto.getOriginBranchId() == null) {
-                throw new IllegalArgumentException("Para traslados entre sucursales se debe indicar la sucursal de origen");
+                throw new IllegalArgumentException(
+                        "Para traslados entre sucursales se debe indicar la sucursal de origen");
             }
             if (dto.getOriginBranchId().equals(dto.getDestinationBranchId())) {
-                throw new IllegalArgumentException("La sucursal de origen no puede ser la misma que la sucursal destino");
+                throw new IllegalArgumentException(
+                        "La sucursal de origen no puede ser la misma que la sucursal destino");
             }
             originBranch = branchRepository.findById(dto.getOriginBranchId())
-                    .orElseThrow(() -> new IllegalArgumentException("Sucursal de origen no valida: " + dto.getOriginBranchId()));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Sucursal de origen no valida: " + dto.getOriginBranchId()));
 
-            // # Validación de stock suficiente en la sucursal de origen
-            Inventory originStock = inventoryService.getInventoryByBranchAndProduct(originBranch.getId(), product.getId());
+            // Validación de stock suficiente en la sucursal de origen
+            Inventory originStock = inventoryService.getInventoryByBranchAndProduct(originBranch.getId(),
+                    product.getId());
             if (originStock == null || originStock.getQuantity() < dto.getQuantity()) {
                 int disponible = originStock != null ? originStock.getQuantity() : 0;
                 throw new IllegalStateException("La sucursal de origen (" + originBranch.getName() +
-                        ") no tiene suficiente stock. Disponible: " + disponible + ", Solicitado: " + dto.getQuantity());
+                        ") no tiene suficiente stock. Disponible: " + disponible + ", Solicitado: "
+                        + dto.getQuantity());
             }
         }
 
-        // # Si es Gerente, la sucursal destino debe ser su sucursal asignada
+        // Si es Gerente, la sucursal destino debe ser su sucursal asignada
         if (user.getRole() == Role.ROLE_GERENTE) {
             if (user.getBranch() == null || !user.getBranch().getId().equals(destinationBranch.getId())) {
-                throw new IllegalArgumentException("Como Gerente solo puede solicitar mercancia para su propia sucursal");
+                throw new IllegalArgumentException(
+                        "Como Gerente solo puede solicitar mercancia para su propia sucursal");
             }
         }
 
-        // # Validación para evitar solicitudes pendientes duplicadas del mismo producto
+        // Validación para evitar solicitudes pendientes duplicadas del mismo producto
         boolean alreadyPending = requestRepository.existsByDestinationBranchIdAndProductIdAndStatus(
                 destinationBranch.getId(), product.getId(), RequestStatus.PENDING);
         if (alreadyPending) {
@@ -122,19 +129,23 @@ public class RequestService {
         InventoryRequest request = getRequestById(id);
 
         if (request.getStatus() != RequestStatus.PENDING) {
-            throw new IllegalStateException("Solo se pueden aprobar solicitudes en estado PENDIENTE. Estado actual: " + request.getStatus());
+            throw new IllegalStateException(
+                    "Solo se pueden aprobar solicitudes en estado PENDIENTE. Estado actual: " + request.getStatus());
         }
 
         User admin = userRepository.findByUsername(adminUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario revisor no encontrado: " + adminUsername));
 
         if (request.getRequestType() == RequestType.TRANSFER) {
-            // # Ajuste atómico de inventario por traspaso (origen (-) y destino (+))
-            inventoryService.adjustStock(request.getOriginBranch().getId(), request.getProduct().getId(), -request.getQuantity());
-            inventoryService.adjustStock(request.getDestinationBranch().getId(), request.getProduct().getId(), request.getQuantity());
+            // Ajuste atómico de inventario por traspaso (origen (-) y destino (+))
+            inventoryService.adjustStock(request.getOriginBranch().getId(), request.getProduct().getId(),
+                    -request.getQuantity());
+            inventoryService.adjustStock(request.getDestinationBranch().getId(), request.getProduct().getId(),
+                    request.getQuantity());
         } else if (request.getRequestType() == RequestType.SUPPLIER) {
-            // # Ajuste de inventario por recepción de proveedor (destino (+))
-            inventoryService.adjustStock(request.getDestinationBranch().getId(), request.getProduct().getId(), request.getQuantity());
+            // Ajuste de inventario por recepción de proveedor (destino (+))
+            inventoryService.adjustStock(request.getDestinationBranch().getId(), request.getProduct().getId(),
+                    request.getQuantity());
         }
 
         request.setStatus(RequestStatus.APPROVED);
@@ -150,7 +161,8 @@ public class RequestService {
         InventoryRequest request = getRequestById(id);
 
         if (request.getStatus() != RequestStatus.PENDING) {
-            throw new IllegalStateException("Solo se pueden rechazar solicitudes en estado PENDIENTE. Estado actual: " + request.getStatus());
+            throw new IllegalStateException(
+                    "Solo se pueden rechazar solicitudes en estado PENDIENTE. Estado actual: " + request.getStatus());
         }
 
         User admin = userRepository.findByUsername(adminUsername)
@@ -158,8 +170,9 @@ public class RequestService {
 
         request.setStatus(RequestStatus.REJECTED);
         request.setReviewer(admin);
-        request.setAdminComments(reviewDto != null && reviewDto.getAdminComments() != null ?
-                reviewDto.getAdminComments() : "Rechazado por Administrador");
+        request.setAdminComments(
+                reviewDto != null && reviewDto.getAdminComments() != null ? reviewDto.getAdminComments()
+                        : "Rechazado por Administrador");
         request.setResolvedAt(LocalDateTime.now());
 
         return requestRepository.save(request);

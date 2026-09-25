@@ -9,11 +9,13 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-// # Repositorio JPA para persistencia de inventario y detección de existencias bajo umbral
+// Repositorio JPA para persistencia de inventario y detección de existencias 
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     List<Inventory> findByBranchId(Long branchId);
+
     Optional<Inventory> findByBranchIdAndProductId(Long branchId, Long productId);
+
     List<Inventory> findByProductId(Long productId);
 
     @Query("SELECT i FROM Inventory i WHERE i.branch.id = :branchId AND i.quantity <= i.product.minStockThreshold")

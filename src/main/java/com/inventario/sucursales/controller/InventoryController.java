@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-// # Controlador REST para consulta de existencias por sucursal, matriz global y alertas de stock
+// Controlador REST para consulta de existencias por sucursal, matriz global y alertas de stock
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {

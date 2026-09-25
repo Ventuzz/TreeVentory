@@ -15,7 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 
-// # Filtro de interceptación HTTP para extracción y validación de tokens JWT en cada petición
+// Filtro de interceptación HTTP para extracción y validación de tokens JWT en cada petición
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -37,8 +37,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (username != null && role != null) {
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(username, null, Collections.singletonList(authority));
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            username, null, Collections.singletonList(authority));
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);

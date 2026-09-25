@@ -1,7 +1,6 @@
 package com.inventario.sucursales.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.inventario.sucursales.config.JwtUtils;
 import com.inventario.sucursales.dto.LoginRequest;
 import com.inventario.sucursales.dto.LoginResponse;
 import com.inventario.sucursales.entity.Branch;
@@ -76,9 +75,10 @@ class SecurityAndControllerIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // # Validación de control de acceso por roles RBAC ante recursos protegidos (403 Forbidden)
+    // # Validación de control de acceso por roles RBAC ante recursos protegidos
+    // (403 Forbidden)
     @Test
-    @WithMockUser(username = "gerente_cdmx", roles = {"GERENTE"})
+    @WithMockUser(username = "gerente_cdmx", roles = { "GERENTE" })
     void testGerenteAccessToAdminOnlyEmployeesReturns403() throws Exception {
         mockMvc.perform(get("/api/employees"))
                 .andExpect(status().isForbidden())
@@ -87,24 +87,25 @@ class SecurityAndControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "gerente_cdmx", roles = {"GERENTE"})
+    @WithMockUser(username = "gerente_cdmx", roles = { "GERENTE" })
     void testGerenteAccessToApproveRequestReturns403() throws Exception {
         mockMvc.perform(put("/api/requests/1/approve")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"adminComments\":\"intento\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"adminComments\":\"intento\"}"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(username = "gerente_cdmx", roles = {"GERENTE"})
+    @WithMockUser(username = "gerente_cdmx", roles = { "GERENTE" })
     void testGerenteAccessToDeleteProductReturns403() throws Exception {
         mockMvc.perform(delete("/api/products/1"))
                 .andExpect(status().isForbidden());
     }
 
-    // # Validación de acceso autorizado a catálogos compartidos para roles autorizados (200 OK)
+    // # Validación de acceso autorizado a catálogos compartidos para roles
+    // autorizados (200 OK)
     @Test
-    @WithMockUser(username = "gerente_cdmx", roles = {"GERENTE"})
+    @WithMockUser(username = "gerente_cdmx", roles = { "GERENTE" })
     void testGerenteCanAccessBranchesReturns200() throws Exception {
         when(branchService.getAllBranches()).thenReturn(List.of(sampleBranch));
 
@@ -115,7 +116,7 @@ class SecurityAndControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = { "ADMIN" })
     void testAdminCanAccessBranchesReturns200() throws Exception {
         when(branchService.getAllBranches()).thenReturn(List.of(sampleBranch));
 
@@ -126,9 +127,10 @@ class SecurityAndControllerIntegrationTest {
 
     // # Validación de ejecución exitosa con privilegios de administrador (200 OK)
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = { "ADMIN" })
     void testAdminAccessToEmployeesReturns200() throws Exception {
-        User emp = new User(1L, "emp1", "pass", "Luis Perez", "l@test.com", Role.ROLE_GERENTE, sampleBranch, "Puesto", "123", true);
+        User emp = new User(1L, "emp1", "pass", "Luis Perez", "l@test.com", Role.ROLE_GERENTE, sampleBranch, "Puesto",
+                "123", true);
         when(employeeService.getAllEmployees()).thenReturn(List.of(emp));
 
         mockMvc.perform(get("/api/employees"))
@@ -137,7 +139,8 @@ class SecurityAndControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].username").value("emp1"));
     }
 
-    // # Validación de endpoint público para autenticación y emisión de tokens (200 OK)
+    // # Validación de endpoint público para autenticación y emisión de tokens (200
+    // OK)
     @Test
     void testPublicLoginEndpointReturns200() throws Exception {
         LoginRequest req = new LoginRequest("admin", "admin123");
@@ -145,8 +148,8 @@ class SecurityAndControllerIntegrationTest {
         when(authService.authenticate(any(LoginRequest.class))).thenReturn(resp);
 
         mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").value("mock.jwt.token"))

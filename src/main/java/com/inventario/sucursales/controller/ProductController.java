@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// # Controlador REST para catálogo de productos y mantenimiento de inventario
+// Controlador REST para catálogo de productos y mantenimiento de inventario
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -50,7 +50,8 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<ApiResponse<Product>> updateProduct(@PathVariable Long id, @Valid @RequestBody Product product) {
+    public ResponseEntity<ApiResponse<Product>> updateProduct(@PathVariable Long id,
+            @Valid @RequestBody Product product) {
         Product updated = productService.updateProduct(id, product);
         return ResponseEntity.ok(ApiResponse.success("Producto actualizado exitosamente", updated));
     }

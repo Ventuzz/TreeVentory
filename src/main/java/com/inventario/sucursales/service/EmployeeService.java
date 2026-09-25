@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-// # Servicio de gestión de personal, asignación a sucursales y cifrado de contraseñas
+// Servicio de gestión de personal, asignación a sucursales y cifrado de contraseñas
 @Service
 public class EmployeeService {
 
@@ -20,7 +20,8 @@ public class EmployeeService {
     private final BranchRepository branchRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public EmployeeService(UserRepository userRepository, BranchRepository branchRepository, PasswordEncoder passwordEncoder) {
+    public EmployeeService(UserRepository userRepository, BranchRepository branchRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.branchRepository = branchRepository;
         this.passwordEncoder = passwordEncoder;
@@ -53,12 +54,14 @@ public class EmployeeService {
             branch = branchRepository.findById(dto.getBranchId())
                     .orElseThrow(() -> new IllegalArgumentException("Sucursal no valida: " + dto.getBranchId()));
         } else if (dto.getRole() == Role.ROLE_GERENTE) {
-            throw new IllegalArgumentException("Un gerente de sucursal debe tener obligatoriamente una sucursal asignada");
+            throw new IllegalArgumentException(
+                    "Un gerente de sucursal debe tener obligatoriamente una sucursal asignada");
         }
 
         User user = new User();
         user.setUsername(dto.getUsername());
-        user.setPassword(passwordEncoder.encode(dto.getPassword() != null && !dto.getPassword().isBlank() ? dto.getPassword() : "empleado123"));
+        user.setPassword(passwordEncoder
+                .encode(dto.getPassword() != null && !dto.getPassword().isBlank() ? dto.getPassword() : "empleado123"));
         user.setFullName(dto.getFullName());
         user.setEmail(dto.getEmail());
         user.setRole(dto.getRole());

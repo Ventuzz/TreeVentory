@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-// # Servicio de operaciones CRUD y consultas para el catálogo de sucursales
+// Servicio de operaciones CRUD y consultas para el catálogo de sucursales
 @Service
 public class BranchService {
 

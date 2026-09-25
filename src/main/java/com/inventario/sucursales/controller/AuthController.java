@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// # Controlador REST para autenticación y emisión de tokens JWT
+// Controlador REST para autenticación y emisión de tokens JWT
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

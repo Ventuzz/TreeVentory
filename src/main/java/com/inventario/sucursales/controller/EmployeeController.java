@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// # Controlador REST para la gestión y aprovisionamiento de empleados por el Administrador
+// Controlador REST para la gestión y aprovisionamiento de empleados por el Administrador
 @RestController
 @RequestMapping("/api/employees")
 @PreAuthorize("hasRole('ADMIN')")
@@ -50,7 +50,8 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<User>> updateEmployee(@PathVariable Long id, @Valid @RequestBody EmployeeDto dto) {
+    public ResponseEntity<ApiResponse<User>> updateEmployee(@PathVariable Long id,
+            @Valid @RequestBody EmployeeDto dto) {
         User updated = employeeService.updateEmployee(id, dto);
         return ResponseEntity.ok(ApiResponse.success("Empleado actualizado exitosamente", updated));
     }

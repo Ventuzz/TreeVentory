@@ -1,6 +1,6 @@
 package com.inventario.sucursales.dto;
 
-// # Objeto de transferencia estándar para envolver respuestas del API REST
+// Objeto de transferencia estándar para envolver respuestas del API REST
 public class ApiResponse<T> {
 
     private boolean success;

@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-// # Utilidad para generación, firma criptográfica y validación de tokens JWT
+// Utilidad para generación, firma criptográfica y validación de tokens JWT
 @Component
 public class JwtUtils {
 

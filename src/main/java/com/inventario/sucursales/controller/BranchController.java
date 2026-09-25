@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// # Controlador REST para consulta y administración de sucursales
+// Controlador REST para consulta y administración de sucursales
 @RestController
 @RequestMapping("/api/branches")
 public class BranchController {

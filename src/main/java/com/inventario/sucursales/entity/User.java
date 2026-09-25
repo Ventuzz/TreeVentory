@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-// # Entidad JPA que representa a usuarios, administradores y empleados con credenciales
+// Entidad JPA que representa a usuarios, administradores y empleados con credenciales
 @Entity
 @Table(name = "users")
 public class User {
@@ -50,7 +50,8 @@ public class User {
     public User() {
     }
 
-    public User(Long id, String username, String password, String fullName, String email, Role role, Branch branch, String position, String phone, boolean active) {
+    public User(Long id, String username, String password, String fullName, String email, Role role, Branch branch,
+            String position, String phone, boolean active) {
         this.id = id;
         this.username = username;
         this.password = password;

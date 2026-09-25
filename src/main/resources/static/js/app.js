@@ -207,7 +207,6 @@ function updateTopAlertPill() {
     const relevantAlerts = (isGerente && currentUser.branchId) ?
         cachedAlerts.filter(a => a.branchId === currentUser.branchId) : cachedAlerts;
 
-    // Solo contar alertas sin atender (las que NO tienen solicitud pendiente de reposición)
     const unattendedAlerts = relevantAlerts.filter(a => !hasActiveRequest(a.branchId, a.productId));
 
     const pill = document.getElementById('topbarAlertPill');
@@ -371,7 +370,7 @@ function renderDashboard() {
             document.getElementById('branchBannerPhone').textContent = myBranch.phone || '55-1001-0001';
         }
 
-        // Alertas del gerente (separando las pendientes sin atender de las que ya tienen solicitud en proceso)
+        // Alertas del gerente
         const myAlerts = cachedAlerts.filter(a => a.branchId === (currentUser.branchId || 1));
         const unattendedAlerts = myAlerts.filter(a => !hasActiveRequest(a.branchId, a.productId));
         const unattendedCriticals = unattendedAlerts.filter(a => a.alertLevel === 'CRITICAL' || a.currentStock === 0);
@@ -412,7 +411,7 @@ function renderDashboard() {
         document.getElementById('kpiValue4').textContent = '4';
         document.getElementById('kpiSub4').textContent = 'activos en sucursal';
 
-        // Panel Izquierdo: Productos con stock bajo (Tabla completa, con estado visual según solicitud)
+        // Panel Izquierdo: Productos con stock bajo
         document.getElementById('dashboardPanelLeftTitle').textContent = 'Productos con stock bajo';
         document.getElementById('dashboardPanelLeftTag').textContent = `${unattendedAlerts.length} sin atender`;
         renderManagerDashboardLowStock(myAlerts);
@@ -1312,7 +1311,7 @@ function openNewProductModal() {
     new bootstrap.Modal(document.getElementById('modalNuevoProducto')).show();
 }
 
-// # Inicialización de escuchadores de eventos y formularios
+// # Inicialización de event listeners y formularios
 function setupEventListeners() {
     // Login Form
     const loginForm = document.getElementById('loginForm');
@@ -1329,7 +1328,7 @@ function setupEventListeners() {
     const btnLogout = document.getElementById('btnLogout');
     if (btnLogout) btnLogout.addEventListener('click', logout);
 
-    // Click en Alertas Topbar -> Redirigir a Inventario
+    // Click en Alertas Topbar
     const topAlertPill = document.getElementById('topbarAlertPill');
     if (topAlertPill) {
         topAlertPill.style.cursor = 'pointer';
@@ -1418,7 +1417,7 @@ function setupEventListeners() {
         });
     }
 
-    // Guardar Empleado (con definición directa de contraseña)
+    // Guardar Empleado
     const btnGuardarEmpleado = document.getElementById('btnGuardarEmpleado');
     if (btnGuardarEmpleado) {
         btnGuardarEmpleado.addEventListener('click', async () => {

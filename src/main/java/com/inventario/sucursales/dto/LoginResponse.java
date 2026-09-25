@@ -1,6 +1,6 @@
 package com.inventario.sucursales.dto;
 
-// # DTO de respuesta de autenticación con token JWT y datos del usuario
+// DTO de respuesta de autenticación con token JWT y datos del usuario
 public class LoginResponse {
 
     private String token;
@@ -14,7 +14,8 @@ public class LoginResponse {
     public LoginResponse() {
     }
 
-    public LoginResponse(String token, String username, String fullName, String role, Long branchId, String branchName) {
+    public LoginResponse(String token, String username, String fullName, String role, Long branchId,
+            String branchName) {
         this.token = token;
         this.type = "Bearer";
         this.username = username;

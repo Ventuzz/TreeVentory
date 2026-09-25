@@ -1,6 +1,6 @@
 package com.inventario.sucursales.dto;
 
-// # DTO para reporte de alertas de inventario bajo o crítico por sucursal
+//  DTO para reporte de alertas de inventario bajo o crítico por sucursal
 public class InventoryAlertDto {
 
     private Long inventoryId;
@@ -12,13 +12,14 @@ public class InventoryAlertDto {
     private String category;
     private Integer currentStock;
     private Integer minStockThreshold;
-    private String alertLevel; // "CRITICAL" (0) or "WARNING" (<= minStockThreshold)
+    private String alertLevel; // "CRITICAL" (0) o "WARNING"
     private String alertMessage;
 
     public InventoryAlertDto() {
     }
 
-    public InventoryAlertDto(Long inventoryId, Long branchId, String branchName, Long productId, String productName, String productSku, String category, Integer currentStock, Integer minStockThreshold) {
+    public InventoryAlertDto(Long inventoryId, Long branchId, String branchName, Long productId, String productName,
+            String productSku, String category, Integer currentStock, Integer minStockThreshold) {
         this.inventoryId = inventoryId;
         this.branchId = branchId;
         this.branchName = branchName;
@@ -33,7 +34,8 @@ public class InventoryAlertDto {
             this.alertMessage = "¡Sin existencias! Urge solicitar mercancía inmediatamente.";
         } else {
             this.alertLevel = "WARNING";
-            this.alertMessage = "Stock bajo (" + currentStock + " de " + minStockThreshold + " mínimas). Considere solicitar reabastecimiento.";
+            this.alertMessage = "Stock bajo (" + currentStock + " de " + minStockThreshold
+                    + " mínimas). Considere solicitar reabastecimiento.";
         }
     }
 

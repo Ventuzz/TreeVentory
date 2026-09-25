@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// # Controlador REST para emisión, consulta y resolución de solicitudes de inventario
+// Controlador REST para emisión, consulta y resolución de solicitudes de inventario
 @RestController
 @RequestMapping("/api/requests")
 public class RequestController {

@@ -9,7 +9,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-// # Servicio de lógica de negocio para autenticación, verificación de credenciales y generación de JWT
+// Servicio de lógica de negocio para autenticación, verificación de credenciales y generación de JWT
 @Service
 public class AuthService {
 
@@ -45,7 +45,6 @@ public class AuthService {
                 user.getFullName(),
                 user.getRole().name(),
                 branchId,
-                branchName
-        );
+                branchName);
     }
 }

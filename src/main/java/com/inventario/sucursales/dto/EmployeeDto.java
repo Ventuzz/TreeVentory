@@ -4,7 +4,7 @@ import com.inventario.sucursales.entity.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-// # DTO para registro, edición y asignación de empleados por el Administrador
+// DTO para registro, edición y asignación de empleados por el Administrador
 public class EmployeeDto {
 
     private Long id;
@@ -33,7 +33,8 @@ public class EmployeeDto {
     public EmployeeDto() {
     }
 
-    public EmployeeDto(Long id, String username, String password, String fullName, String email, Role role, Long branchId, String position, String phone, boolean active) {
+    public EmployeeDto(Long id, String username, String password, String fullName, String email, Role role,
+            Long branchId, String position, String phone, boolean active) {
         this.id = id;
         this.username = username;
         this.password = password;

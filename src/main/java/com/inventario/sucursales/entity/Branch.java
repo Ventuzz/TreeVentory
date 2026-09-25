@@ -3,7 +3,7 @@ package com.inventario.sucursales.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
-// # Entidad JPA que representa una sucursal física en el territorio nacional
+// Entidad JPA que representa una sucursal física en el territorio nacional
 @Entity
 @Table(name = "branches")
 public class Branch {
@@ -38,7 +38,8 @@ public class Branch {
     public Branch() {
     }
 
-    public Branch(Long id, String code, String name, String city, String state, String address, String phone, boolean active) {
+    public Branch(Long id, String code, String name, String city, String state, String address, String phone,
+            boolean active) {
         this.id = id;
         this.code = code;
         this.name = name;

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import com.inventario.sucursales.repository.InventoryRequestRepository;
 import com.inventario.sucursales.entity.RequestStatus;
 
-// # Servicio para control de existencias, cálculo de alertas de stock bajo y ajustes de inventario
+// Servicio para control de existencias, cálculo de alertas de stock bajo y ajustes de inventario
 @Service
 public class InventoryService {
 
@@ -27,9 +27,9 @@ public class InventoryService {
     private final InventoryRequestRepository requestRepository;
 
     public InventoryService(InventoryRepository inventoryRepository,
-                          BranchRepository branchRepository,
-                          ProductRepository productRepository,
-                          InventoryRequestRepository requestRepository) {
+            BranchRepository branchRepository,
+            ProductRepository productRepository,
+            InventoryRequestRepository requestRepository) {
         this.inventoryRepository = inventoryRepository;
         this.branchRepository = branchRepository;
         this.productRepository = productRepository;
@@ -120,15 +120,13 @@ public class InventoryService {
                 inv.getProduct().getSku(),
                 inv.getProduct().getCategory(),
                 inv.getQuantity(),
-                inv.getProduct().getMinStockThreshold()
-        );
+                inv.getProduct().getMinStockThreshold());
         if (requestRepository != null) {
             requestRepository.findByDestinationBranchIdAndProductIdAndStatus(
-                    inv.getBranch().getId(), inv.getProduct().getId(), RequestStatus.PENDING
-            ).ifPresent(req -> {
-                dto.setHasPendingRequest(true);
-                dto.setPendingRequestId(req.getId());
-            });
+                    inv.getBranch().getId(), inv.getProduct().getId(), RequestStatus.PENDING).ifPresent(req -> {
+                        dto.setHasPendingRequest(true);
+                        dto.setPendingRequestId(req.getId());
+                    });
         }
         return dto;
     }

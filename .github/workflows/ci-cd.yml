@@ -26,7 +26,7 @@ jobs:
       - name: Dar Permisos de Ejecución al Maven Wrapper
         run: chmod +x mvnw
 
-      - name: Ejecutar Pruebas Automatizadas con JaCoCo (Cobertura >= 80%)
+      - name: Ejecutar Pruebas Automatizadas con JaCoCo
         env:
           JWT_SECRET: SuperClaveSecretaUltraSeguraParaFirmarTokensJWT2026EnInventarioMultiSucursalMexico
         run: ./mvnw clean verify

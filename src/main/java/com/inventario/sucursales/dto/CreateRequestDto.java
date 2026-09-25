@@ -4,13 +4,13 @@ import com.inventario.sucursales.entity.RequestType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-// # DTO con datos de entrada para creación de solicitudes de traspaso o surtido
+// DTO con datos de entrada para creación de solicitudes de traspaso o surtido
 public class CreateRequestDto {
 
     @NotNull(message = "El tipo de solicitud es obligatorio (TRANSFER o SUPPLIER)")
     private RequestType requestType;
 
-    private Long originBranchId; // Opcional, requerido solo para TRANSFER
+    private Long originBranchId; // requerido solo para TRANSFER
 
     @NotNull(message = "La sucursal de destino es obligatoria")
     private Long destinationBranchId;
@@ -27,7 +27,8 @@ public class CreateRequestDto {
     public CreateRequestDto() {
     }
 
-    public CreateRequestDto(RequestType requestType, Long originBranchId, Long destinationBranchId, Long productId, Integer quantity, String notes) {
+    public CreateRequestDto(RequestType requestType, Long originBranchId, Long destinationBranchId, Long productId,
+            Integer quantity, String notes) {
         this.requestType = requestType;
         this.originBranchId = originBranchId;
         this.destinationBranchId = destinationBranchId;
